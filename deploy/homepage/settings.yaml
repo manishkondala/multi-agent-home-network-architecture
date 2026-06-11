@@ -1,0 +1,13 @@
+title: pi-fleet
+headerStyle: boxed
+theme: dark
+color: slate
+layout:
+  Network:
+    style: row
+    columns: 2
+  Observability:
+    style: row
+    columns: 3
+statusStyle: dot
+hideVersion: true

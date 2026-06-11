@@ -1,0 +1,13 @@
+- resources:
+    cpu: true
+    memory: true
+    disk: /
+    cputemp: true
+    uptime: true
+    refresh: 5000
+
+- datetime:
+    text_size: xl
+    format:
+      timeStyle: short
+      dateStyle: long

@@ -1,0 +1,32 @@
+- Network:
+    - Pi-hole:
+        icon: pi-hole.svg
+        href: "http://{{HOMEPAGE_VAR_HOST}}:8081/admin"
+        description: Network-wide ad blocking
+        server: my-docker
+        container: pihole
+        widget:
+          type: pihole
+          version: 6
+          url: http://pihole:80
+          key: "{{HOMEPAGE_VAR_PIHOLE_PASSWORD}}"
+
+- Observability:
+    - Grafana:
+        icon: grafana.svg
+        href: "http://{{HOMEPAGE_VAR_HOST}}:3000"
+        description: Dashboards (admin / Keychain grafana-admin)
+        server: my-docker
+        container: grafana
+    - Prometheus:
+        icon: prometheus.svg
+        href: "http://{{HOMEPAGE_VAR_HOST}}:9090"
+        description: Metrics & targets
+        server: my-docker
+        container: prometheus
+    - Loki:
+        icon: loki.svg
+        href: "http://{{HOMEPAGE_VAR_HOST}}:3000/explore"
+        description: Logs (query via Grafana Explore)
+        server: my-docker
+        container: loki

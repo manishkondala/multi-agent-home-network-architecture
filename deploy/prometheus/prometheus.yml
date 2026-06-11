@@ -1,0 +1,34 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels: { node: pi-node1 }
+
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels: { node: pi-node1 }
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+        labels: { node: pi-node1 }
+
+  - job_name: pihole
+    static_configs:
+      - targets: ["pihole-exporter:9617"]
+        labels: { node: pi-node1 }
+
+  - job_name: grafana
+    static_configs:
+      - targets: ["grafana:3000"]
+        labels: { node: pi-node1 }
+
+  - job_name: loki
+    static_configs:
+      - targets: ["loki:3100"]
+        labels: { node: pi-node1 }

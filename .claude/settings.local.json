@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.anthropic.com)",
+      "WebSearch",
+      "Bash(ping *)",
+      "Bash(security add-generic-password *)",
+      "Bash(ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_pifleet -N \"\" -C \"pifleet-cto@$\\(hostname -s\\)\" -q)",
+      "Bash(ssh pi-node1 *)",
+      "Bash(git init *)",
+      "Bash(mkdir -p .claude/agents docs ops/reports deploy/prometheus deploy/loki deploy/promtail deploy/grafana/provisioning/datasources deploy/grafana/provisioning/dashboards deploy/grafana/dashboards deploy/homepage scripts)",
+      "Bash(curl -sfL \"https://grafana.com/api/dashboards/1860/revisions/latest/download\" -o node-exporter-full.json)",
+      "Bash(curl -sfL \"https://grafana.com/api/dashboards/10176/revisions/latest/download\" -o pihole.json)",
+      "Bash(curl -sfL \"https://grafana.com/api/dashboards/14282/revisions/latest/download\" -o cadvisor.json)",
+      "Bash(curl -sfL \"https://grafana.com/api/dashboards/13639/revisions/latest/download\" -o loki-logs.json)",
+      "Bash(sed -i '' -e 's/\\\\${DS_PROMETHEUS}/prometheus/g' -e 's/\\\\${DS_LOKI}/loki/g' -e 's/\\\\${DS_VICTORIAMETRICS}/prometheus/g' *.json)",
+      "Bash(./scripts/deploy.sh)",
+      "Bash(curl -s \"https://hub.docker.com/v2/repositories/ekofr/pihole-exporter/tags?page_size=15\")",
+      "Bash(python3 -c \"import json,sys; [print\\(t['name']\\) for t in json.load\\(sys.stdin\\)['results']]\")"
+    ]
+  }
+}
