@@ -16,7 +16,13 @@
       "Bash(sed -i '' -e 's/\\\\${DS_PROMETHEUS}/prometheus/g' -e 's/\\\\${DS_LOKI}/loki/g' -e 's/\\\\${DS_VICTORIAMETRICS}/prometheus/g' *.json)",
       "Bash(./scripts/deploy.sh)",
       "Bash(curl -s \"https://hub.docker.com/v2/repositories/ekofr/pihole-exporter/tags?page_size=15\")",
-      "Bash(python3 -c \"import json,sys; [print\\(t['name']\\) for t in json.load\\(sys.stdin\\)['results']]\")"
+      "Bash(python3 -c \"import json,sys; [print\\(t['name']\\) for t in json.load\\(sys.stdin\\)['results']]\")",
+      "Bash(ssh -T git@github.com)",
+      "Bash(gh auth *)",
+      "Bash(ssh-keyscan -t ed25519,rsa github.com)",
+      "Bash(curl -s http://192.168.1.169:3100/ready)",
+      "Bash(git add *)",
+      "Bash(git -c 'user.name=Manish Kondala' -c user.email=kondalamanish@gmail.com commit -q -m 'Fix pihole-exporter tag, add learnings + first fleet check report *)"
     ]
   }
 }
