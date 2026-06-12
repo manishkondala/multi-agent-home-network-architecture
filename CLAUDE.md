@@ -35,8 +35,10 @@ pi-node1's LAN IP is DHCP-assigned (192.168.1.169 as of 2026-06-11) — **never 
 in configs; use the `pi-node1` SSH alias or the Tailscale MagicDNS name. If the IP changes,
 update `~/.ssh/config` and `deploy/.env` only.
 
-⚠️ pi-node1 runs a pre-existing container `jsms_worker-au` (owner's old project). Do not stop,
-remove, or starve it.
+⚠️ pi-node1 has three pre-existing containers from the owner's old project (`jsms_worker-au`,
+`happy_shannon`, `adoring_jones`). The owner **deliberately stopped all three on 2026-06-11**
+(they were eating CPU). Leave them stopped — do not restart them, and do not remove them
+without the owner's say-so.
 
 ## Layout
 - `deploy/` — docker compose stack + service configs (the source of truth; the Pi runs a copy at
