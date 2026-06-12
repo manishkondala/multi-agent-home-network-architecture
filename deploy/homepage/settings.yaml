@@ -1,13 +1,37 @@
+# Dark glassy redesign (owner directive 2026-06-11): background photo + frosted cards,
+# grouped sections Apps / Network / Platform. URLs use HOMEPAGE_VAR_HOST (injected by
+# scripts/deploy.sh) — never a hardcoded LAN IP.
 title: pi-fleet
-headerStyle: boxed
+description: home infrastructure platform on pi-node1
 theme: dark
-color: slate
+color: zinc
+headerStyle: clean
+iconStyle: theme
+statusStyle: dot
+hideVersion: true
+
+background:
+  image: https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2560&q=80
+  blur: sm
+  saturate: 100
+  brightness: 50
+  opacity: 100
+cardBlur: sm
+
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: false
+
 layout:
+  Apps:
+    style: row
+    columns: 3
+    icon: mdi-rocket-launch
   Network:
     style: row
     columns: 2
-  Observability:
+    icon: mdi-shield-check
+  Platform:
     style: row
     columns: 3
-statusStyle: dot
-hideVersion: true
+    icon: mdi-chart-box

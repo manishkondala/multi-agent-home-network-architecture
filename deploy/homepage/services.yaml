@@ -1,3 +1,28 @@
+# Tiles. siteMonitor probes run from inside the homepage container — use fleet-network
+# hostnames there; user-facing hrefs use HOMEPAGE_VAR_HOST (injected at deploy time).
+- Apps:
+    - Pointly:
+        icon: mdi-credit-card-multiple
+        href: "http://{{HOMEPAGE_VAR_HOST}}:3002"
+        description: Credit-card points dashboard
+        server: my-docker
+        container: cc-points
+        siteMonitor: http://cc-points:3000
+    - Stock Analysis:
+        icon: mdi-finance
+        href: "http://{{HOMEPAGE_VAR_HOST}}:3003"
+        description: ML stock advisor
+        server: my-docker
+        container: stock-frontend
+        siteMonitor: http://stock-frontend:80
+    - Stock API:
+        icon: mdi-api
+        href: "http://{{HOMEPAGE_VAR_HOST}}:3004/docs"
+        description: FastAPI + ML engine (OpenAPI docs)
+        server: my-docker
+        container: stock-backend
+        siteMonitor: http://stock-backend:8765/api/health
+
 - Network:
     - Pi-hole:
         icon: pi-hole.svg
@@ -5,28 +30,32 @@
         description: Network-wide ad blocking
         server: my-docker
         container: pihole
+        siteMonitor: http://pihole:80/admin
         widget:
           type: pihole
           version: 6
           url: http://pihole:80
           key: "{{HOMEPAGE_VAR_PIHOLE_PASSWORD}}"
 
-- Observability:
+- Platform:
     - Grafana:
         icon: grafana.svg
         href: "http://{{HOMEPAGE_VAR_HOST}}:3000"
         description: Dashboards (admin / Keychain grafana-admin)
         server: my-docker
         container: grafana
+        siteMonitor: http://grafana:3000/api/health
     - Prometheus:
         icon: prometheus.svg
         href: "http://{{HOMEPAGE_VAR_HOST}}:9090"
-        description: Metrics & targets
+        description: Metrics, targets & probes
         server: my-docker
         container: prometheus
+        siteMonitor: http://prometheus:9090/-/healthy
     - Loki:
         icon: loki.svg
         href: "http://{{HOMEPAGE_VAR_HOST}}:3000/explore"
         description: Logs (query via Grafana Explore)
         server: my-docker
         container: loki
+        siteMonitor: http://loki:3100/ready

@@ -1,10 +1,20 @@
+# Header widgets: live host stats (CPU / temp / RAM / disk / uptime), search, clock.
+- greeting:
+    text_size: xl
+    text: pi-fleet
+
 - resources:
     cpu: true
     memory: true
     disk: /
     cputemp: true
     uptime: true
+    units: metric
     refresh: 5000
+
+- search:
+    provider: duckduckgo
+    target: _blank
 
 - datetime:
     text_size: xl
