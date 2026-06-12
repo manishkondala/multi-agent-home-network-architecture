@@ -6,7 +6,14 @@
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
-ENV NEXT_TELEMETRY_DISABLED=1
+# Without openssl present, `prisma generate` guesses the openssl-1.1.x engine and the
+# runtime (openssl 3) image then 500s with PrismaClientInitializationError. Install
+# openssl AND pin the target so the right engine ships no matter what.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    PRISMA_CLI_BINARY_TARGETS=linux-arm64-openssl-3.0.x
 # prisma/ must be present before npm ci: the postinstall hook runs `prisma generate`.
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
