@@ -131,6 +131,53 @@ services:
     restart: unless-stopped
     mem_limit: 512m
 
+  # ---------- Owner apps (images built ON the Pi from ~/apps — see scripts/sync-apps.sh) ----------
+  cc-points:
+    image: cc-points:0.1.0          # local image, built on pi-node1 (never pulled)
+    container_name: cc-points
+    networks: [fleet]
+    ports: ["3002:3000"]
+    environment:
+      TZ: ${TZ}
+      DATABASE_URL: "file:/data/dev.db"
+    volumes:
+      - /home/pi/apps/data/cc-points:/data   # SQLite lives outside the image
+    restart: unless-stopped
+    mem_limit: 512m
+
+  stock-backend:
+    image: stock-backend:0.1.0      # local image, built on pi-node1
+    container_name: stock-backend
+    networks: [fleet]
+    ports: ["3004:8765"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - /home/pi/apps/data/stock-analysis:/app/data            # SQLite (portfolio/chat)
+      - /home/pi/apps/secrets/stock-backend.env:/app/.env:ro   # ANTHROPIC_API_KEY (Pi-only file)
+    restart: unless-stopped
+    mem_limit: 1g
+
+  stock-frontend:
+    image: stock-frontend:0.1.0     # local image, built on pi-node1
+    container_name: stock-frontend
+    networks: [fleet]
+    ports: ["3003:80"]
+    depends_on: [stock-backend]
+    restart: unless-stopped
+    mem_limit: 64m
+
+  # ---------- Availability probing ----------
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0   # verified linux/arm64 by pulling on the Pi
+    container_name: blackbox-exporter
+    networks: [fleet]
+    command: --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    restart: unless-stopped
+    mem_limit: 64m
+
   # ---------- Frontend portal ----------
   homepage:
     image: ghcr.io/gethomepage/homepage:v1.2.0

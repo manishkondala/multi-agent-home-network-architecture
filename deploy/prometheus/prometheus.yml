@@ -32,3 +32,26 @@ scrape_configs:
     static_configs:
       - targets: ["loki:3100"]
         labels: { node: pi-node1 }
+
+  # HTTP availability probes (owner apps + portal) via blackbox-exporter.
+  # `instance` becomes the probed URL; `app` gives dashboards a friendly name.
+  - job_name: blackbox-http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ["http://cc-points:3000/"]
+        labels: { node: pi-node1, app: cc-points }
+      - targets: ["http://stock-frontend:80/"]
+        labels: { node: pi-node1, app: stock-frontend }
+      - targets: ["http://stock-backend:8765/api/health"]
+        labels: { node: pi-node1, app: stock-backend }
+      - targets: ["http://homepage:3000/"]
+        labels: { node: pi-node1, app: homepage }
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
