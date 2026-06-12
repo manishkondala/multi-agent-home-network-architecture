@@ -9,6 +9,9 @@ source "$(dirname "$0")/checks.lib.sh"
 mkdir -p "$STATE_DIR" "$INCIDENT_DIR/new" "$INCIDENT_DIR/archive" "$SENTINEL_DIR/runs" "$SENTINEL_DIR/outbox"
 exec 9>"$STATE_DIR/lock"; flock -n 9 || exit 0          # one instance
 [ -f "$SENTINEL_DIR/pause" ] && exit 0                  # deploy in progress
+# Boot grace: first 3 min after a reboot everything is warming up (loki 503s,
+# clock may not be NTP-synced yet) — skip, next tick will catch real breakage.
+awk '{exit ($1 < 180) ? 0 : 1}' /proc/uptime && exit 0
 pgrep -f "docker compose up|docker build" >/dev/null && exit 0
 date -u +%FT%TZ > "$STATE_DIR/last-run"
 

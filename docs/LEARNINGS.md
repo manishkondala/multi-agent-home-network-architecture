@@ -3,6 +3,23 @@
 Running log of things we learned the hard way (or just learned). Newest first.
 `coach` appends here after reviews; everyone appends when they hit something non-obvious.
 
+## 2026-06-12 (night, first real incident: Pi reboot)
+- **A reboot resurrects `restart=always` containers — even ones the owner stopped on
+  purpose.** jsms_worker-au came back at boot and spawned two new client containers
+  (third zombie generation this week). A manual `docker stop` does NOT survive a dockerd
+  restart when the policy is `always`. Fix: `docker update --restart=no jsms_worker-au`.
+  Rule: "deliberately stopped" containers must have their restart policy neutralized, or
+  the decision evaporates at the next reboot/power blip.
+- **pi-node1 has no RTC and ntpd races pihole at boot** — the clock starts ~30 min in the
+  past (fake-hwclock) and ntpd's first DNS lookups fail because pihole (the resolver) is
+  still starting; `ntpq -p` shows `reach 0` and the clock never steps. Fix: restart ntp
+  once the stack is up. A wrong clock backdates incident filenames (ordering broke) and
+  will eventually kill Gmail SMTP (TLS). Note: systemd-timesyncd is masked *because* the
+  ntp package owns time here — that's normal Debian, don't unmask it.
+- **Detection needs a boot grace period.** loki legitimately 503s on /ready for ~2-3 min
+  while warming after boot; the sentinel filed an "outage" for it. fleet-sentinel.sh now
+  exits quietly when /proc/uptime < 180s.
+
 ## 2026-06-12 (evening, sentinel build)
 - **Claude Code runs fine on a Pi 4** via the native installer (`curl -fsSL
   https://claude.ai/install.sh | bash` → `~/.local/bin/claude`, v2.1.175, arm64/glibc 2.31).
