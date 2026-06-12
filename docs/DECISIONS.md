@@ -1,5 +1,25 @@
 # Decisions (ADR-lite)
 
+## 2026-06-12 — Self-healing: Claude Sentinel agent runs ON the Pi; bash only detects
+Owner directive: reports alone are useless — agents must fix outages, learn patterns, and
+remember previous outages. Owner chose **Claude-only fixes** and **zero dependence on his
+laptop** (Mac Mini with 24/7 Claude lands ~June 2026). Cloud routines can't reach the LAN
+and the laptop sleeps, so the interim agent host is pi-node1 itself: Claude Code native
+arm64 binary (host node is v16, too old — untouched, owner's legacy projects may need it),
+invoked headless (`claude -p --dangerously-skip-permissions`, capped turns/timeout) by a
+dumb cron detector. Detector writes an incident file (with per-service outage history =
+memory), Sentinel fixes/verifies/RCAs/appends learnings, wrapper emails the owner either
+way — if Claude lacks auth/credits the raw incident still goes out. Cost guardrails baked
+into SENTINEL.md from the same-day token-burn RCA. The whole sentinel/ dir migrates to the
+Mac Mini unchanged.
+
+## 2026-06-12 — Status emails via owner's own Gmail (app password), queued until provided
+No paid SMTP (owner directive). Gmail SMTP_SSL:465 with an app password is free and his
+own account; python3 smtplib only (no packages). Missing creds → mail queues to
+sentinel/outbox/ and nothing is lost. Pi timezone switched UTC → America/New_York so the
+7AM/7PM cron means owner-local time across DST; deploy.sh excludes Pi-side runtime state
+(incidents/, secrets/, sentinel state) from rsync --delete.
+
 ## 2026-06-12 — Owner apps build natively ON pi-node1; compose references local tags
 Standing order #5 forbids docker on the Mac, and cross-building arm64 elsewhere adds a
 registry we don't have. So: app source is snapshotted to `~/apps/<name>/` on the Pi, our

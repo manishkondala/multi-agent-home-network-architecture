@@ -3,6 +3,22 @@
 Running log of things we learned the hard way (or just learned). Newest first.
 `coach` appends here after reviews; everyone appends when they hit something non-obvious.
 
+## 2026-06-12 (evening, sentinel build)
+- **Claude Code runs fine on a Pi 4** via the native installer (`curl -fsSL
+  https://claude.ai/install.sh | bash` → `~/.local/bin/claude`, v2.1.175, arm64/glibc 2.31).
+  Host node v16 is too old for the npm route — left untouched (owner's legacy projects).
+  Headless auth: `ANTHROPIC_API_KEY` env (the stock-analysis key is on the box but has **no
+  credit balance** — "Credit balance is too low") or a subscription via `claude setup-token`.
+- **rsync --delete excludes are load-bearing on the Pi.** `~/pi-fleet/` now holds runtime
+  state the repo doesn't know about (incidents/, secrets/, sentinel state/outbox,
+  learnings-inbox.md) — every new Pi-side state dir MUST be added to deploy.sh's exclude
+  list or the next deploy silently deletes it.
+- **Debian cron + timedatectl**: restart cron after `timedatectl set-timezone` or jobs keep
+  firing on the old timezone.
+- **Drill the failure path, not just the happy path.** The controlled stock-frontend drill
+  proved detect → incident → agent-invoke → fallback-email in 3 seconds, and confirmed the
+  exact failure mode (credit balance) before the first real outage would have.
+
 ## 2026-06-12 (morning, CTO verification pass)
 - **A container that orchestrates other containers leaves children behind.** The 2026-06-11
   22:26 `docker start jsms_worker-au` (watchdog's stale "must be Up" rule) ran only 6 min,

@@ -28,6 +28,31 @@ in Prometheus/Grafana/Loki — and make the homepage less boring (dark dashboard
       *(done 2026-06-12: RCA in ops/reports/2026-06-12-0730-rca-dev-token-burn.md; coach
       updated all four agent files — see ops/reports/2026-06-12-0734-coach-rca-followup.md)*
 
+## Now (v0.3 — self-healing ops, owner directive 2026-06-12)
+Owner: status email to kondalamanish@gmail.com every day at 7AM and 7PM (full report incl.
+hosted apps), free SMTP (no paid service). Reporting alone is useless ("I'm not going to fix
+it") — agents must FIX failures, learn the patterns, and log learnings so the next outage is
+handled with awareness of previous ones.
+Owner decision: **Claude-only fixes** (no dumb auto-restarts), nothing depends on the
+owner's laptop. Interim host for the Sentinel agent: **Claude Code headless on pi-node1
+itself** (installed 2026-06-12, v2.1.175); migrates wholesale to the Mac Mini when it
+arrives (~June 2026, 24/7 Claude with sudo on the LAN).
+- [x] **Detection layer on the Pi** (cron */3): finds failures, writes incident record with
+      outage memory + logs to `~/pi-fleet/incidents/new/`, invokes the Sentinel agent.
+      Fixes nothing itself. Validated by controlled drill 2026-06-12 (stock-frontend).
+- [x] **Sentinel agent** (`claude -p` on the Pi; `deploy/sentinel/SENTINEL.md` = canonical
+      instructions; `.claude/agents/sentinel.md` = Mac-side twin): diagnose → fix → verify
+      → RCA into incident → learning into `learnings-inbox.md` → playbook update. Emails
+      owner; if Claude can't run, raw incident is emailed instead (fallback validated).
+- [x] **Twice-daily full status email** (cron 7:00/19:00, Pi tz now America/New_York):
+      raw report generator validated; Claude writes the executive summary when available.
+- [ ] **Claude auth on the Pi** — BLOCKED on owner: stock-analysis API key has no credit;
+      either top up console.anthropic.com or `claude setup-token` (subscription billing).
+- [ ] **Gmail SMTP** — BLOCKED on owner: app password → `~/pi-fleet/secrets/smtp.env`.
+      Until then mail queues in `sentinel/outbox/` (nothing lost).
+- [ ] **Learning loop close-out (CTO duty)**: each session drain `incidents/new/` +
+      `learnings-inbox.md` → `docs/LEARNINGS.md` + curated `remediations.conf` in repo.
+
 ## Carry-over (v0.1)
 - [x] SSH key auth + Keychain secrets + `pi-node1` alias
 - [x] Agent team chartered (`.claude/agents/`)
