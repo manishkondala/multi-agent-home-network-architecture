@@ -16,5 +16,8 @@ MARK="# pi-fleet-sentinel"
 ( crontab -l 2>/dev/null | grep -v "$MARK" || true
   echo "*/3 * * * * /bin/bash $SENTINEL_DIR/fleet-sentinel.sh >> $SENTINEL_DIR/cron.log 2>&1 $MARK"
   echo "0 7,19 * * * /bin/bash $SENTINEL_DIR/fleet-report.sh email >> $SENTINEL_DIR/cron.log 2>&1 $MARK"
+  # ntpd races pihole (its DNS) at boot and never syncs — kick it once the stack is up.
+  # Verified needed on both 2026-06-12 reboots; clock boots ~30 min stale (no RTC).
+  echo "@reboot sleep 120 && sudo systemctl restart ntp $MARK"
 ) | crontab -
 echo "cron installed:"; crontab -l | grep "$MARK"
