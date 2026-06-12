@@ -1,0 +1,18 @@
+# Used as git core.excludesFile when snapshotting the owner's app working copies
+# (scratch --git-dir in /tmp, work-tree pointed read-only at the app dir) for transfer
+# to pi-node1 via `git archive | ssh tar -x`. Keeps deps, build output, DBs and secrets
+# out of the build context. See ops notes in docs/DECISIONS.md.
+node_modules/
+.next/
+venv/
+dist/
+__pycache__/
+.env
+*.db
+*.db-journal
+.pointly.*
+*.log
+*.pid
+tsconfig.tsbuildinfo
+.DS_Store
+data/
