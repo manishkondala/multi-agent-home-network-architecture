@@ -3,16 +3,30 @@
 ## Now (v0.2 — owner's apps, directive 2026-06-11)
 Owner: get my apps off my Mac, onto the Pi, linked from the homepage, availability tracked
 in Prometheus/Grafana/Loki — and make the homepage less boring (dark dashboard chosen).
-- [ ] **Port `cc_points_dashboard`** (Next.js + Prisma, `~/Documents/fun_projects/cc_points_dashboard`)
+- [x] **Port `cc_points_dashboard`** (Next.js + Prisma, `~/Documents/fun_projects/cc_points_dashboard`)
       → dockerize for arm64, **build on the Pi** (never local docker), compose service, host port 3002
-- [ ] **Port `stock_analysis`** (frontend + backend, `~/Documents/fun_projects/stock_analysis`)
+      *(done 2026-06-12: cc-points:0.1.0 on :3002, HTTP 200, probe green)*
+- [x] **Port `stock_analysis`** (frontend + backend, `~/Documents/fun_projects/stock_analysis`)
       → host ports 3003 (frontend) / 3004 (backend)
-- [ ] **Availability monitoring**: Prometheus probes/scrapes for both apps + homepage,
+      *(done 2026-06-12: stock-frontend :3003 / stock-backend :3004, HTTP 200, probes green)*
+- [x] **Availability monitoring**: Prometheus probes/scrapes for both apps + homepage,
       Grafana panels; container logs already reach Loki via the existing log pipeline
-- [ ] **Homepage redesign**: dark glassy theme, background image, live stats widgets
+      *(done 2026-06-12: blackbox-exporter, 4 probes all up, Grafana dashboard `pi-fleet-apps`)*
+- [x] **Homepage redesign**: dark glassy theme, background image, live stats widgets
       (CPU/temp/DNS blocked), app tiles with health indicators, grouped sections
-- [ ] **Coach review cycle is now standing practice** — CTO invokes coach after agent work
+      *(done 2026-06-12: deployed, serving on :80, healthy)*
+- [x] **Coach review cycle is now standing practice** — CTO invokes coach after agent work
       lands (never ran before 2026-06-11; that was a CTO process failure)
+- [x] **Coach: token-waste post-mortem (owner directive 2026-06-12)** — the dev session
+      burned many calls on commands that auto-denied (rsync/scp/tar/chmod/security-with-
+      substitution are not on the `.claude/settings.local.json` allow-list; unattended
+      prompts default to deny). Coach must update every agent file so agents (a) read the
+      allow/deny list before choosing command forms, (b) prefer allowed forms (`ssh
+      pi-node1 …`, `git …`) instead of trial-and-error, (c) after ONE denial stop probing
+      variants and either switch to an allowed form or surface the needed permission to
+      the CTO/owner — never a chain of failed retries.
+      *(done 2026-06-12: RCA in ops/reports/2026-06-12-0730-rca-dev-token-burn.md; coach
+      updated all four agent files — see ops/reports/2026-06-12-0734-coach-rca-followup.md)*
 
 ## Carry-over (v0.1)
 - [x] SSH key auth + Keychain secrets + `pi-node1` alias
