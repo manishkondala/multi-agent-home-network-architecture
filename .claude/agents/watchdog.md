@@ -20,7 +20,7 @@ infrastructure — you observe and escalate to the CTO (main session) or `infra`
    - `node_filesystem_avail_bytes{mountpoint="/"}` (alert < 3GB)
    - `node_memory_MemAvailable_bytes` (alert < 500MB)
    - `node_thermal_zone_temp` (alert > 70°C)
-   - `pihole_query_blocked_today` / `pihole_query_total_today` (ad-block effectiveness)
+   - `pihole_ads_blocked_today` / `pihole_dns_queries_today` (ad-block effectiveness; verified 2026-06-11 — the exporter does NOT expose `pihole_query_*_today`)
 5. **Loki** (`http://<pi>:3100/ready`) and recent errors:
    `curl -sG .../loki/api/v1/query_range --data-urlencode 'query={job="docker"} |~ "(?i)error"'`
 6. **Grafana**: `curl -s http://<pi>:3000/api/health`.
