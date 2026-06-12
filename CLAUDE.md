@@ -20,7 +20,10 @@ a Mac Mini compute node, more Pis).
    Retrieve with: `security find-generic-password -s pi-fleet -a <account> -w`
    Accounts: `pi` (SSH password, legacy — key auth is primary), `pihole-web`, `grafana-admin`.
 4. Build everything multi-tenant: assume more apps and more nodes will join.
-5. **Nothing runs on the owner's Mac.** All Docker commands, builds, and services run on the
+5. **Owner directives are persisted the same session they're given** — into `docs/ROADMAP.md`
+   (and memory) before anything else happens. A directive that lives only in a conversation
+   transcript is considered lost (it happened once: the port-my-apps request).
+6. **Nothing runs on the owner's Mac.** All Docker commands, builds, and services run on the
    fleet nodes over SSH (`ssh pi-node1 "docker ..."`). Never run `docker` locally or launch
    Docker Desktop on the Mac — images build on the Pi itself (or `docker buildx` *on the Pi*
    when cross-building is ever needed). Local deny rules enforce this.

@@ -3,6 +3,27 @@
 Running log of things we learned the hard way (or just learned). Newest first.
 `coach` appends here after reviews; everyone appends when they hit something non-obvious.
 
+## 2026-06-11 (first coach review)
+Reviewed both watchdog reports, git log, and three incidents. Findings → instruction-file fixes:
+- **A stopped container is not an outage.** watchdog flagged `jsms_worker-au` as "must be Up"
+  and recommended an urgent restart; the CTO restarted it — but the owner had stopped it
+  deliberately an hour earlier (shell history showed a high-CPU hunt ending in `docker stop`).
+  The evidence was even in watchdog's own report (`restart: always` yet down = explicit stop)
+  but the conclusion didn't follow. Fix: watchdog.md got a stopped-container triage section
+  (inspect → `last` + shell history → classify crashed vs stopped-by-human; human stop =
+  ask the owner, never auto-restore). infra.md got the same "ask, don't revert" rule.
+- **Agent files must track standing-order changes.** watchdog.md still required the legacy
+  container Up after CLAUDE.md flipped to "stays stopped"; dev.md still said "heavy builds
+  happen on the Mac" and "test locally first" after standing order #5 banned local docker.
+  Stale instructions are how the same incident recurs. Both corrected; expected state of the
+  three jsms containers (stopped) is now in watchdog.md and infra.md.
+- **Owner directives must be persisted the moment they're heard.** The port-2-apps + homepage
+  redesign directive was nearly lost because no session wrote it to ROADMAP. Every agent file
+  now carries: a directive received directly goes into `docs/ROADMAP.md` immediately.
+- **Don't report guessed names.** The watchdog file shipped with invented Prometheus metric
+  names (`pihole_query_*_today`); CTO's fix to the real names was correct — generalized in
+  watchdog.md: empty query result → list real metrics via `/api/v1/label/__name__/values`.
+
 ## 2026-06-11 (evening)
 - **Never run Docker on the owner's Mac.** A session launched Docker Desktop locally
   (`open -a Docker`, `docker version/info/buildx` probing) and the owner flagged it: everything
