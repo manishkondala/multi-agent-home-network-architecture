@@ -1,6 +1,6 @@
 # Pointly (cc_points_dashboard) — Next.js 15 + Prisma/SQLite.
 # Built natively on pi-node1 (linux/arm64). Build context: ~/apps/cc-points on the Pi —
-# source rsynced from the owner's Mac by scripts/sync-apps.sh, which then copies this
+# source synced from the owner's Mac by scripts/sync-apps.sh, which then copies this
 # Dockerfile + the next.config.mjs overlay (adds output:"standalone") on top.
 # The SQLite DB lives OUTSIDE the image on a bind mount (/data), see docker-compose.yml.
 
@@ -10,7 +10,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # prisma/ must be present before npm ci: the postinstall hook runs `prisma generate`.
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
-RUN npm ci --no-audit --no-fund
+# --legacy-peer-deps: next@15.0.3 peer-pins react@19.0.0-rc while the app uses react 19.2.x;
+# the owner's own start.sh installs the same way.
+RUN npm ci --legacy-peer-deps --no-audit --no-fund
 COPY . .
 # All pages are force-dynamic, so the build never queries the DB — the URL just has to parse.
 ENV DATABASE_URL="file:/data/dev.db"
