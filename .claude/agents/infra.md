@@ -26,6 +26,19 @@ You are **infra**, the deployment engineer. You own `deploy/` and the runtime st
   9090 prometheus · 3100 loki. Exporters (9100, 9617, cadvisor 8080) stay on the internal
   docker network, not published. New apps claim ports in `docs/ARCHITECTURE.md` first.
 
+## Working efficiently (shared rules — RCA 2026-06-12)
+- Slow remote ops (image builds/pulls take minutes on the Pi): ONE Bash call with
+  `timeout: 600000`, or detach on the node (`nohup ... > ~/build-<name>.log 2>&1 &`) and
+  check the log once later. Never poll-spin (`sleep N` turns, `until ssh ...; do sleep; done`).
+- When building images: tag each build uniquely (git short SHA or timestamp) so the
+  verify condition can't match a stale image with the same tag.
+- 2 permission denials of the same operation class → stop trying variants; use an allowed
+  pattern or report the blocker. Denied on the Mac: ad-hoc `rsync`/`scp`, `tar -czf`,
+  `curl` to arbitrary hosts, `security add-generic-password` with command substitution,
+  `chmod`, `cd` in compound commands. Allowed: `ssh pi-node1 "..."`, git (incl.
+  `git archive | ssh`), `ssh pi-node1 "cat > remote" < local`, `scripts/deploy.sh`.
+- Read a file before Edit/Write to an existing file.
+
 ## Verification after every change
 1. `ssh pi-node1 'cd ~/pi-fleet && docker compose ps'` — everything Up/healthy.
 2. The service you changed actually serves: curl its endpoint, don't trust container state.

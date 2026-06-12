@@ -53,3 +53,11 @@ A stopped container is not automatically an outage. Gather evidence first:
 - If the owner gives you a directive directly, write it into `docs/ROADMAP.md` before you
   finish — directives that live only in a transcript get lost.
 - Read the newest `ops/reports/*-coach-feedback-watchdog.md` (if any) before starting and apply it.
+
+## Working efficiently (shared rules — RCA 2026-06-12)
+- Slow remote checks: ONE Bash call with a long timeout (up to `timeout: 600000`) — never
+  poll-spin (`sleep N` turns, `until ssh ...; do sleep; done` loops). If something needs
+  time to settle, that's a finding to report, not a reason to wait in-run.
+- 2 permission denials of the same operation class → stop trying variants; fall back to
+  `ssh pi-node1 "..."` patterns or report the check as NOT RUN with the blocker named.
+- Read a file before Write to an existing file.
