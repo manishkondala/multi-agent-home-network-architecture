@@ -22,7 +22,20 @@
       "Bash(ssh-keyscan -t ed25519,rsa github.com)",
       "Bash(curl -s http://192.168.1.169:3100/ready)",
       "Bash(git add *)",
-      "Bash(git -c 'user.name=Manish Kondala' -c user.email=kondalamanish@gmail.com commit -q -m 'Fix pihole-exporter tag, add learnings + first fleet check report *)"
+      "Bash(git -c 'user.name=Manish Kondala' -c user.email=kondalamanish@gmail.com commit -q -m 'Fix pihole-exporter tag, add learnings + first fleet check report *)",
+      "Bash(git -C /Users/manishkondala/Documents/fun_projects/pi-llm-projects/pi-hole log --oneline -10)",
+      "Bash(ssh *)",
+      "Bash(gh repo *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://api.github.com/repos/manishkondala/multi-agent-home-network-architecture)",
+      "Bash(curl -s \"https://api.github.com/users/manishkondala/repos?per_page=100\")",
+      "Bash(git *)",
+      "Bash(osascript -e 'tell application \"System Events\" to get name of every login item')",
+      "Skill(update-config)"
+    ],
+    "deny": [
+      "Bash(docker *)",
+      "Bash(open -a Docker*)",
+      "Bash(open -a \"Docker\"*)"
     ]
   }
 }

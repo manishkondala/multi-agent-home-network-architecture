@@ -140,6 +140,7 @@ services:
     environment:
       HOMEPAGE_ALLOWED_HOSTS: "*"
       HOMEPAGE_VAR_PIHOLE_PASSWORD: ${PIHOLE_PASSWORD}
+      HOMEPAGE_VAR_HOST: ${HOMEPAGE_VAR_HOST}
     volumes:
       - ./homepage:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro

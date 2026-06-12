@@ -14,7 +14,7 @@ PI_IP=$(ssh "$HOST" "hostname -I | awk '{print \$1}'")
 echo "==> pi-node1 LAN IP: $PI_IP"
 
 echo "==> Syncing deploy/ -> $HOST:~/$REMOTE_DIR"
-rsync -az --delete --exclude .env deploy/ "$HOST:$REMOTE_DIR/"
+rsync -az --delete --exclude .env --exclude homepage/logs deploy/ "$HOST:$REMOTE_DIR/"
 
 echo "==> Writing .env on the Pi (secrets never touch the repo)"
 ssh "$HOST" "cat > $REMOTE_DIR/.env && chmod 600 $REMOTE_DIR/.env" <<EOF

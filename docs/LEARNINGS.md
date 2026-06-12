@@ -3,6 +3,17 @@
 Running log of things we learned the hard way (or just learned). Newest first.
 `coach` appends here after reviews; everyone appends when they hit something non-obvious.
 
+## 2026-06-11 (evening)
+- **Never run Docker on the owner's Mac.** A session launched Docker Desktop locally
+  (`open -a Docker`, `docker version/info/buildx` probing) and the owner flagged it: everything
+  is hosted on the Pi, nothing on the PC. Now enforced via deny rules in
+  `.claude/settings.local.json` and standing order #5 in CLAUDE.md. All docker commands go
+  through `ssh pi-node1 "docker ..."`; images build on the Pi.
+- **Containers that write into bind-mounted config dirs break `rsync --delete`.** Homepage
+  writes `homepage/logs/` as root on the Pi, so the next deploy's rsync failed with Permission
+  denied. Fix: `--exclude homepage/logs` in deploy.sh. Watch for this with any future app that
+  logs into its config mount.
+
 ## 2026-06-11 (initial build)
 - **Verify image tags exist before deploying.** `ekofr/pihole-exporter:v1.1.1` was a guessed
   tag and didn't exist (real: v1.2.0); first compose pull failed. Rule: check
