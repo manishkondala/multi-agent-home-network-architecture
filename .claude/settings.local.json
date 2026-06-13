@@ -54,7 +54,18 @@
       "Bash(python3 -c \"import sys,json; r=json.load\\(sys.stdin\\)['data']['result']; print\\('queries_today:', r[0]['value'][1] if r else 'n/a'\\)\")",
       "Bash(curl -s 'http://192.168.1.169:9090/api/v1/query?query=pihole_status')",
       "Bash(python3 -c \"import sys,json; r=json.load\\(sys.stdin\\)['data']['result']; print\\('pihole_status:', r[0]['value'][1] if r else 'n/a'\\)\")",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Skill(claude-api)",
+      "Bash(dig +short +time=3 +tries=1 @192.168.1.169 doubleclick.net)",
+      "Bash(dig +short +time=3 +tries=1 @192.168.1.169 google.com)",
+      "Bash(dig +time=2 +tries=1 @192.168.1.169 google.com +short)",
+      "mcp__claude_ai_Gmail__search_threads",
+      "Read(//tmp/**)",
+      "Bash(python3 deploy/sentinel/mailfmt.py report OK \"Fleet is healthy. All 13 services up, DNS ad-blocking working, no active incidents. Nothing needs your attention.\")",
+      "Bash(python3 -c \"import re,html; print\\('OK, bytes:', __import__\\('os'\\).path.getsize\\('/tmp/out-report.html'\\)\\)\")",
+      "Bash(python3 deploy/sentinel/mailfmt.py incident SENTINEL-UNAVAILABLE)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs"
     ],
     "deny": [
       "Bash(docker *)",
