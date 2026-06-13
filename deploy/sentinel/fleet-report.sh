@@ -72,10 +72,8 @@ report and how they were resolved (read any files in /home/pi/pi-fleet/incidents
 detail), and anything needing the owner's action. Plain text, no markdown headers." \
         --model "${REPORT_MODEL:-claude-haiku-4-5-20251001}" --max-turns 8 \
         --dangerously-skip-permissions 2>/dev/null)
-    if [ -n "$SUMMARY" ]; then
-        printf '%s\n\n============ FULL REPORT ============\n%s\n' "$SUMMARY" "$REPORT" \
-            | send_mail "[pi-fleet] $VERDICT — status report $(date '+%F %H:%M')"
-    else
-        echo "$REPORT" | send_mail "[pi-fleet] $VERDICT — status report $(date '+%F %H:%M') (raw — agent unavailable)"
-    fi
+    SUBJECT="[pi-fleet] $VERDICT — status report $(date '+%F %H:%M')"
+    [ -z "$SUMMARY" ] && SUBJECT="$SUBJECT (agent unavailable)"
+    printf '%s' "$REPORT" | python3 "$(dirname "$0")/mailfmt.py" report "$VERDICT" "$SUMMARY" \
+        | send_mail "$SUBJECT"
 fi

@@ -29,13 +29,15 @@ RC=$?
 
 if [ $RC -eq 0 ] && grep -q '## Sentinel fix report' "$INC"; then
     STATUS=$(grep -o 'Status: [A-Z-]*' "$INC" | tail -1 | cut -d' ' -f2)
-    python3 "$SENTINEL_DIR/send-mail.py" "[pi-fleet] INCIDENT — ${STATUS:-handled by Sentinel}" < "$INC"
+    python3 "$SENTINEL_DIR/mailfmt.py" incident "${STATUS:-UNKNOWN}" < "$INC" \
+        | python3 "$SENTINEL_DIR/send-mail.py" "[pi-fleet] INCIDENT — ${STATUS:-handled by Sentinel}"
     echo "$(date -u +%FT%TZ) sentinel agent finished: ${STATUS:-?} (run log: $RUNLOG)"
 else
     {
         echo "The Claude Sentinel agent could NOT run (exit $RC — likely missing auth/credits,"
         echo "see $RUNLOG). Raw incident below; no automatic fix was attempted."
         echo; cat "$INC"
-    } | python3 "$SENTINEL_DIR/send-mail.py" "[pi-fleet] INCIDENT — SENTINEL UNAVAILABLE, manual attention needed"
+    } | python3 "$SENTINEL_DIR/mailfmt.py" incident "SENTINEL-UNAVAILABLE" \
+        | python3 "$SENTINEL_DIR/send-mail.py" "[pi-fleet] INCIDENT — SENTINEL UNAVAILABLE, manual attention needed"
     echo "$(date -u +%FT%TZ) sentinel agent FAILED rc=$RC (see $RUNLOG)"
 fi
