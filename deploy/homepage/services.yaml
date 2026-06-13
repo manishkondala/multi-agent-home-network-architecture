@@ -15,13 +15,6 @@
         server: my-docker
         container: stock-frontend
         siteMonitor: http://stock-frontend:80
-    - Stock API:
-        icon: mdi-api
-        href: "http://{{HOMEPAGE_VAR_HOST}}:3004/docs"
-        description: FastAPI + ML engine (OpenAPI docs)
-        server: my-docker
-        container: stock-backend
-        siteMonitor: http://stock-backend:8765/api/health
 
 - Network:
     - Pi-hole:

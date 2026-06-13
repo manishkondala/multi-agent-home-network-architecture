@@ -25,7 +25,7 @@ quicklaunch:
 layout:
   Apps:
     style: row
-    columns: 3
+    columns: 2
     icon: mdi-rocket-launch
   Network:
     style: row
