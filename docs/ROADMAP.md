@@ -46,12 +46,18 @@ arrives (~June 2026, 24/7 Claude with sudo on the LAN).
       owner; if Claude can't run, raw incident is emailed instead (fallback validated).
 - [x] **Twice-daily full status email** (cron 7:00/19:00, Pi tz now America/New_York):
       raw report generator validated; Claude writes the executive summary when available.
-- [ ] **Claude auth on the Pi** — BLOCKED on owner: stock-analysis API key has no credit;
-      either top up console.anthropic.com or `claude setup-token` (subscription billing).
-- [ ] **Gmail SMTP** — BLOCKED on owner: app password → `~/pi-fleet/secrets/smtp.env`.
-      Until then mail queues in `sentinel/outbox/` (nothing lost).
-- [ ] **Learning loop close-out (CTO duty)**: each session drain `incidents/new/` +
-      `learnings-inbox.md` → `docs/LEARNINGS.md` + curated `remediations.conf` in repo.
+- [x] **Claude auth on the Pi** — resolved 2026-06-13: owner ran `claude setup-token`,
+      OAuth token lives in `~/pi-fleet/secrets/claude.env` (sourced by sentinel-agent.sh
+      and fleet-report.sh). Verified live (`claude -p` → AUTH_OK).
+- [x] **Gmail SMTP** — resolved (smtp.env populated 2026-06-12, confirmed live — sentinel
+      has been emailing kondalamanish@gmail.com since 22:18 UTC 2026-06-12).
+- [x] **Learning loop close-out (CTO duty)**: `learnings-inbox.md` empty; one stale
+      incident (`20260612T234807Z-outage.md`, reboot-recovery noise, already covered by
+      the 2026-06-12 reboot RCA in LEARNINGS.md) archived 2026-06-13.
+
+v0.3 is now fully live end-to-end: detection → Claude diagnose/fix → email, both auth
+paths working. The next real outage gets an actual Claude-authored fix + RCA, not just a
+fallback email.
 
 ## Carry-over (v0.1)
 - [x] SSH key auth + Keychain secrets + `pi-node1` alias
@@ -62,6 +68,11 @@ arrives (~June 2026, 24/7 Claude with sudo on the LAN).
 - [ ] Router DHCP reservation for the Pi (owner; kills the moving-IP problem)
 
 ## Next (operate & harden)
+- **Off-board dead-Pi watcher** (gap found in owner's 2026-06-12 pull-the-plug test): every
+  alert path (sentinel, SMTP) lives ON the Pi, so a dead Pi is silent. Needs a second
+  vantage point — Mac Mini when enrolled (ping + own email path), or an external uptime
+  service (e.g. free healthchecks.io ping from the 7AM/7PM cron: missed ping = email) in
+  the interim.
 - Scheduled watchdog runs (cron/`/loop`) producing daily reports in `ops/reports/`
 - Grafana alerting (disk <3GB, temp >70°C, target down, DNS failure) → notification channel
 - Backup: pihole config volume + grafana volume + app data volumes → tarball pulled off-node

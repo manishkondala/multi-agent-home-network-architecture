@@ -3,6 +3,21 @@
 Running log of things we learned the hard way (or just learned). Newest first.
 `coach` appends here after reviews; everyone appends when they hit something non-obvious.
 
+## 2026-06-13 (sentinel fully unblocked — Claude auth on the Pi)
+- **`claude setup-token` output can pick up a stray newline+space when piped through
+  `printf '...' > file` over ssh** — the long token wraps in the terminal and the wrap
+  becomes a literal `\n` inside the single-quoted string, so `claude.env` ended up as two
+  "lines" (`KEY=part1` / ` part2`) and `source` only set the truncated value. Symptom:
+  `cut -d= -f1 file` prints the var name AND a second orphan line. Fix without ever
+  retyping the secret: `tr -d '\n ' < file > file.fixed` (newlines and spaces are not
+  legal inside `sk-ant-oat01-...` tokens, so stripping both is safe) then restore a
+  trailing newline. Always sanity-check a freshly-written secrets file with
+  `cut -d= -f1` before trusting it — same flow applies to the Mac Mini's
+  `claude setup-token` setup later.
+- Both v0.3 blockers are now cleared: Claude OAuth token in `secrets/claude.env`
+  (verified `claude -p` → real response) and Gmail SMTP (already live since
+  2026-06-12 22:18 UTC). Sentinel's Claude-fix path is live for the next real incident.
+
 ## 2026-06-12 (night, first real incident: Pi reboot)
 - **A reboot resurrects `restart=always` containers — even ones the owner stopped on
   purpose.** jsms_worker-au came back at boot and spawned two new client containers
