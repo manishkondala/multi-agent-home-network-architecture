@@ -17,6 +17,14 @@
         siteMonitor: http://stock-frontend:80
 
 - Network:
+    - Wi-Fi Health:
+        icon: mdi-wifi-check
+        href: "http://{{HOMEPAGE_VAR_HOST}}:3005"
+        description: Run a Wi-Fi health check from any room
+        server: my-docker
+        container: wifi-health
+        # Host-networked (no container DNS) — probe via the Pi's LAN IP, not a fleet hostname.
+        siteMonitor: http://{{HOMEPAGE_VAR_HOST}}:3005/api/health
     - Pi-hole:
         icon: pi-hole.svg
         href: "http://{{HOMEPAGE_VAR_HOST}}:8081/admin"

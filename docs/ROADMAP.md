@@ -14,6 +14,73 @@ lives only on a node or in a transcript.
       `/code-review ultra` on PRs; and whether nodes push to a shared remote (origin) or sync via
       one hub node. (Today: single node `pi-node1`, local repo on the Mac.)
 
+## Now (v0.5 — Wi-Fi health application, owner directive 2026-06-14)
+Owner (a Wi-Fi engineer): the house Wi-Fi (Verizon CR1000A router + extender) is bad on multiple
+devices. Build a **Wi-Fi health-check web app**, code in
+`~/Documents/fun_projects/wifi_health_check_home_application/`, hosted on the Pi and linked from
+the `192.168.1.169` homepage. Users open it on phone/laptop from different rooms and **run a health
+check**; the UI must be modern and tech-savvy. Requested metrics: **Avg RTT, Avg SRTT, link
+capacity, congestion window (tx + rx side)**, awareness of **RF interference/noise** degrading PHY
+rate (e.g. microwave on/off), a **regular 7AM/7PM report of the health of all currently-connected
+devices**, and an **admin-only Wi-Fi-sensing "map the house structure" view** (the CSI / "WiFi sees
+through walls" research). **Stats collected always** (continuous), not just on demand. The Mac Mini
+(more compute) is nearly enrolled.
+
+**Privacy model (owner directive):** a regular user sees **only their own session stats** when they
+run a check. The **admin/owner** sees **historic, device-level / device-centric stats** (from
+Prometheus/Grafana).
+
+**CTO feasibility notes (so the ask isn't lost to physics):**
+- A browser **cannot** read OS/kernel Wi-Fi internals (RSSI, channel, 802.11 standard, PHY rate,
+  cwnd, SRTT). The honest browser-side "session check" = a **local network-quality test against the
+  Pi**: RTT/jitter/loss, down/up throughput (≈ link capacity), DNS time, plus a **self-reported
+  room + device label**.
+- **SRTT + congestion window are kernel TCP_INFO** — captured on the **Pi** (server side of the
+  test socket) via `ss -tin` (rtt/rttvar→SRTT, snd/rcv cwnd, retrans, delivery_rate, pacing_rate).
+  The Pi is the measurement anchor. (Test backend likely needs host networking so it sees the real
+  client sockets, not NAT'd bridge sockets.)
+- **Per-device RSSI / PHY rate / channel / 802.11 standard** live on the **AP**, not the Pi or the
+  browser. Source = the **CR1000A local API station list** (netops to probe what RF fields it
+  exposes — Fios gateways are stingy) keyed by MAC. May be partial/unavailable.
+- **RF interference / noise / channel occupancy** = continuous **`iw dev wlan0 scan`** (or
+  monitor-mode capture) from the Pi's radio (eth0 carries DNS, so wlan0 can be dedicated). Microwave
+  events show as PHY-rate drop / retry spikes / noise-floor rise. Robust monitor mode may want a USB
+  adapter; onboard Broadcom is flaky.
+- **House structural mapping** = **CSI sensing** (Nexmon-CSI on the Pi / ESP32-CSI / DensePose-from-
+  WiFi). Full 3D/skeletal reconstruction is **research-grade** (needs trained models + labeled data)
+  — **parked**. Achievable near-term: **CSI motion/presence** ("room occupied / motion detected"),
+  experimental, on a dedicated radio (Nexmon flash is risky on the prod DNS Pi → dedicated Pi or
+  Mac-Mini era). Admin-only.
+
+**Phased plan (CTO):**
+- [x] **P1 — Session check + Pi-side TCP_INFO** — built & deployed 2026-06-14. `wifi-health`
+      (host-net, `:3005`, image built on the Pi via `sync-apps.sh wifi`), homepage tile, Grafana
+      `pi-fleet-wifi`. Browser measures RTT/jitter/loss + down/up throughput + DNS; the Pi reads
+      SRTT/cwnd/retrans/delivery_rate from the kernel (`ss -tin`, captured in-handler so fast/closed
+      sockets aren't missed) and serves it back per-client. Per-session SQLite + Prometheus
+      (`wifi_health_*`, labels device/room). Verified: target up, session capture working.
+- [x] **P2 — Continuous RF exporter** — built & deployed 2026-06-14. `wifi-rf-exporter` (host-net +
+      privileged, `iw dev wlan0 scan`, `:9620`) → `wifi_rf_*` (neighbour APs per channel/band,
+      strongest signal, station load). Live: ch1 is congested (7 APs). **Gap (hardware):** onboard
+      Broadcom returns nothing for `iw survey dump`, so channel **noise-floor / airtime-busy** —
+      i.e. **microwave / non-Wi-Fi interference detection** — is **not** available; needs a
+      survey-capable radio (USB adapter / Mac-mini). The exporter attempts survey each cycle and
+      will light up automatically when such a radio exists.
+- [ ] **P3 — Per-device stats from the AP.** netops probes the CR1000A local API; if it exposes a
+      station list (RSSI/PHY rate/standard) → `wifi-router-exporter` per MAC. Else document the gap.
+- [ ] **P4 — 7AM/7PM Wi-Fi section.** Extend the v0.3 `fleet-report.sh` email with all currently-
+      connected devices' latest health + interference events (reuses the existing SMTP pipeline).
+- [ ] **P5 (experimental) — CSI motion/presence**, admin-only, on a dedicated radio / Mac-Mini era.
+      House structural reconstruction stays parked as research.
+
+**Owner decisions 2026-06-14:** admin view = **Both** (Grafana `pi-fleet-wifi` now; curated in-app
+admin view — room heatmap etc. — later). First scope = **P1 + P2** (session app + Pi TCP_INFO **and**
+the continuous RF/interference exporter). Wi-Fi sensing (P5) = **parked as research** until the
+Mac Mini lands.
+
+Routes through the standard flow: `dev` builds the app, `infra` deploys, `netops` owns the
+Wi-Fi/RF/router side, `cr` reviews before commit. Mac-Mini, when enrolled, hosts the heavy/CSI work.
+
 ## Now (v0.4 — per-device network visibility + streaming dashboard, owner directive 2026-06-13)
 Owner: "I want to see what domains are being accessed on my network — if I'm watching YouTube
 or Peacock, I want to know." Decision: **option C** — fix per-device visibility first, then
@@ -115,9 +182,7 @@ fallback email.
 - Decide fate of the stopped legacy jsms containers (owner stopped them 2026-06-11; remove?)
 
 ## Later (expand)
-- **Wi-Fi health** (owner: "the wifi in my house sucks"): probe container (ping/speedtest/
-  signal scan) → Prometheus → Grafana Wi-Fi dashboard; evidence-based recommendation on the
-  range extender. Owner directive pending — netops leads.
+- **Wi-Fi health** — *promoted to a full directive: see "Now (v0.5)" above.*
 - **Mac Mini enrollment**: power up, enroll like a node (docker, tailscale, exporters);
   becomes heavy-compute tier. Candidate for long-retention metrics/logs storage.
 - **More Pis** if the fleet grows — enrollment recipe in `docs/ARCHITECTURE.md`.

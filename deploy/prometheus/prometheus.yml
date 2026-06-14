@@ -77,6 +77,18 @@ scrape_configs:
       - targets: ["streaming-exporter:9618"]
         labels: { node: pi-node1 }
 
+  # Wi-Fi health app + RF sensor are host-networked, so they're reached via the host
+  # gateway (extra_hosts on the prometheus service), not container-name DNS.
+  - job_name: wifi-health
+    static_configs:
+      - targets: ["host.docker.internal:3005"]
+        labels: { node: pi-node1 }
+
+  - job_name: wifi-rf
+    static_configs:
+      - targets: ["host.docker.internal:9620"]
+        labels: { node: pi-node1 }
+
   - job_name: loki
     static_configs:
       - targets: ["loki:3100"]

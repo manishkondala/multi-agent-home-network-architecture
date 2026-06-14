@@ -73,6 +73,10 @@ services:
     image: prom/prometheus:v2.53.4
     container_name: prometheus
     networks: [fleet]
+    # Lets Prometheus scrape host-networked services (wifi-health, wifi-rf-exporter)
+    # that aren't on the fleet bridge and so have no container-name DNS.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # Locked: bound to the Pi's loopback only — no LAN access (no native auth).
     # Grafana reaches it via the internal fleet network (http://prometheus:9090);
     # Pi-host scripts (sentinel) use localhost. Query from the Mac via ssh+localhost.
@@ -193,6 +197,38 @@ services:
     depends_on: [stock-backend]
     restart: unless-stopped
     mem_limit: 64m
+
+  # Wi-Fi health-check app (roadmap v0.5 P1). Host-networked so `ss -tin` reads the REAL
+  # client sockets (SRTT/cwnd) instead of Docker-NAT'd ones, and so the browser hits one
+  # origin on :3005. Image built on the Pi by `scripts/sync-apps.sh wifi` (never pulled).
+  # Prometheus scrapes it via host.docker.internal:3005.
+  wifi-health:
+    image: wifi-health:0.1.0
+    container_name: wifi-health
+    network_mode: host
+    environment:
+      TZ: ${TZ}
+      WIFI_PORT: "3005"
+    volumes:
+      - /home/pi/apps/data/wifi-health:/data   # SQLite session log lives outside the image
+    restart: unless-stopped
+    mem_limit: 256m
+
+  # Continuous RF / channel-occupancy sensing from wlan0 (roadmap v0.5 P2). eth0 carries
+  # DNS, so wlan0 is free to dedicate to scanning. Host net + privileged to reach the
+  # radio. Built on the Pi by compose. Scraped via host.docker.internal:9620.
+  wifi-rf-exporter:
+    build: ./wifi-rf-exporter
+    image: wifi-rf-exporter:0.1.0
+    container_name: wifi-rf-exporter
+    network_mode: host
+    privileged: true
+    environment:
+      TZ: ${TZ}
+      WIFI_IFACE: wlan0
+      SCAN_INTERVAL: "60"
+    restart: unless-stopped
+    mem_limit: 96m
 
   # ---------- Availability probing ----------
   blackbox-exporter:

@@ -7,14 +7,16 @@
 # Transfer is git-snapshot-over-ssh, not rsync: the agent permission allow-list only
 # carries broad `ssh *` / `git *` (rsync & scp auto-deny). See docs/DECISIONS.md 2026-06-12.
 #
-# Usage: scripts/sync-apps.sh [cc|stock]...   (no args = both)
+# Usage: scripts/sync-apps.sh [cc|stock|wifi]...   (no args = all)
 #   TAG=0.2.0 scripts/sync-apps.sh cc          # build a new version tag
 #
 # Layout on the Pi:
 #   ~/apps/cc-points/            build context (source snapshot + overlay Dockerfile)
 #   ~/apps/stock-analysis/       backend/ + frontend/ build contexts
+#   ~/apps/wifi-health/          build context (self-contained Dockerfile in the source)
 #   ~/apps/data/cc-points/       dev.db        (runtime bind mount — never overwritten)
 #   ~/apps/data/stock-analysis/  stocklab.db   (runtime bind mount — never overwritten)
+#   ~/apps/data/wifi-health/     wifi-health.db (runtime bind mount — never overwritten)
 #   ~/apps/secrets/              stock-backend.env (700/600, mounted ro at /app/.env)
 set -euo pipefail
 
@@ -22,6 +24,7 @@ HOST=pi-node1
 TAG="${TAG:-0.1.0}"
 CC_SRC="$HOME/Documents/fun_projects/cc_points_dashboard"
 STOCK_SRC="$HOME/Documents/fun_projects/stock_analysis"
+WIFI_SRC="$HOME/Documents/fun_projects/wifi_health_check_home_application"
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 EXCLUDES="$REPO/apps/sync-excludes.txt"
 SCRATCH=/tmp/fleet-sync
@@ -52,7 +55,7 @@ seed() { ssh "$HOST" "test -f $2 && echo '   (exists, kept)' || cat > $2" < "$1"
 
 echo "==> Disk/space check on $HOST"
 ssh "$HOST" "df -h / | tail -1; docker system df"
-ssh "$HOST" "mkdir -p ~/apps/data/cc-points ~/apps/data/stock-analysis ~/apps/secrets && chmod 700 ~/apps/secrets"
+ssh "$HOST" "mkdir -p ~/apps/data/cc-points ~/apps/data/stock-analysis ~/apps/data/wifi-health ~/apps/secrets && chmod 700 ~/apps/secrets"
 
 if want cc "$@"; then
   echo "==> [cc-points] snapshot + ship"
@@ -84,7 +87,15 @@ if want stock "$@"; then
   ssh "$HOST" "cd ~/apps/stock-analysis/frontend && DOCKER_BUILDKIT=1 docker build -t stock-frontend:$TAG ."
 fi
 
+if want wifi "$@"; then
+  echo "==> [wifi-health] snapshot + ship (self-contained Dockerfile travels with the source)"
+  snapshot wifi-health "$WIFI_SRC"
+  ship wifi-health "apps/wifi-health"
+  echo "==> [wifi-health] build wifi-health:$TAG on the Pi"
+  ssh "$HOST" "cd ~/apps/wifi-health && DOCKER_BUILDKIT=1 docker build -t wifi-health:$TAG ."
+fi
+
 echo "==> Pruning dangling images (SD card is small)"
 ssh "$HOST" "docker image prune -f; df -h / | tail -1"
 echo "==> Done. App images on $HOST:"
-ssh "$HOST" "docker images | grep -E 'cc-points|stock-' || true"
+ssh "$HOST" "docker images | grep -E 'cc-points|stock-|wifi-health' || true"

@@ -2,3 +2,7 @@
 *.env
 .DS_Store
 ops/reports/*.tmp
+
+# Python build artifacts
+__pycache__/
+*.pyc
