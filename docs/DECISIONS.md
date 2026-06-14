@@ -100,3 +100,27 @@ mid-build. Compose v2 plugin installed alongside. Revisit during a planned maint
 ## 2026-06-11 — Loki 7d / Prometheus 15d+2GB retention
 The whole node lives on a 29GB SD card with ~9GB free. SD cards also die from write volume;
 short retention is survival, not stinginess. Long-term storage can move to the Mac Mini later.
+
+## 2026-06-13 — Per-service streaming visibility via a custom FTL exporter (not pihole-exporter / not a Grafana SQLite datasource)
+Owner wants to see which device is streaming what (v0.4 B). The existing `ekofr/pihole-exporter`
+only emits aggregate top-N domains — no per-client breakdown — so it can't answer the question.
+Two real options: (a) a Grafana SQLite datasource plugin querying the FTL DB directly, or (b) a
+small purpose-built Prometheus exporter. Chose (b): keeps Grafana a pure Prometheus consumer
+(matches blackbox/pihole/node exporters), no new datasource plugin, and the domain→service
+mapping lives in a versioned `services.yml` anyone can extend. The exporter (`deploy/streaming-
+exporter/`) tails the FTL `queries` table by rowid, classifies domains by substring match
+(first match wins), and exposes `pihole_service_queries_total{service,client}`.
+Mount is **read-write** even though we only SELECT: FTL keeps the DB in WAL mode, and SQLite
+cannot open a WAL database on a read-only mount (it needs to write the `-shm` wal-index). Guard
+is `PRAGMA query_only=ON`.
+
+## 2026-06-13 — Infra/observability services locked to the Pi loopback; only apps stay LAN-open
+Owner: "only keep the applications open (cc-points, stock); lock the rest." Prometheus and Loki
+have no native auth and were published on `0.0.0.0` — readable by anyone on the LAN. Bound them
+to `127.0.0.1:` instead of adding a reverse-proxy + basic-auth layer: simpler, no new moving
+parts, and they don't need LAN exposure (Grafana queries them over the internal fleet network;
+promtail pushes internally; sentinel/report scripts run on the Pi and use `localhost`). Grafana
+(`:3000`, login) and Pi-hole admin (`:8081`, password) were already auth-gated, so they stay
+LAN-open. Net LAN-open surface: DNS 53, homepage 80, pihole-admin 8081, grafana 3000, and the
+apps 3002/3003/3004. Off-Pi queries to Prometheus/Loki now go via `ssh pi-node1 "curl
+localhost:..."` (watchdog/infra docs updated to match).

@@ -3,6 +3,25 @@
 Running log of things we learned the hard way (or just learned). Newest first.
 `coach` appends here after reviews; everyone appends when they hit something non-obvious.
 
+## 2026-06-13 (false "SENTINEL UNAVAILABLE" emails despite a working fix)
+- **`sentinel-agent.sh` declared failure even when Claude succeeded.** SENTINEL.md step 7
+  tells the agent to move a RESOLVED incident from `incidents/new/` to
+  `incidents/archive/`. The wrapper's post-run check (`grep -q '## Sentinel fix report'
+  "$INC"`) then grepped the now-missing `incidents/new/...` path, failed, and fell into
+  the "Claude unavailable" branch — emailing "SENTINEL UNAVAILABLE, manual attention
+  needed" for an incident Claude had *already fixed and verified* (the 12:06Z grafana
+  outage: agent restarted grafana, confirmed `/api/health` 200, wrote a full RESOLVED
+  report). Fix: after the run, fall back to `incidents/archive/<basename>` if `$INC`
+  no longer exists at its original path before checking for the fix report
+  (`deploy/sentinel/sentinel-agent.sh`).
+- **Open mystery: something sent grafana a clean `docker stop`-equivalent (SIGTERM,
+  signal=15, exitCode=0, RestartCount stays 0) twice on 2026-06-13** — once ~9 min after
+  the stack came up (12:05:41Z) and again ~65s after Sentinel's restart (12:07:52Z),
+  confirmed via `docker events --filter container=grafana`. No cron/systemd timer or
+  repo script issues `docker stop`/`compose stop`/`compose down`. If this recurs, it'll
+  cost a Claude invocation + email every cycle (now correctly "RESOLVED" instead of
+  "UNAVAILABLE", but still noise). Check first whether it's a manual drill.
+
 ## 2026-06-13 (sentinel fully unblocked — Claude auth on the Pi)
 - **`claude setup-token` output can pick up a stray newline+space when piped through
   `printf '...' > file` over ssh** — the long token wraps in the terminal and the wrap
@@ -163,3 +182,23 @@ Reviewed both watchdog reports, git log, and three incidents. Findings → instr
 - **GF_SECURITY_ADMIN_PASSWORD only applies on first boot** of an empty grafana volume.
 - Pre-existing container `jsms_worker-au` (2yrs old, up 3 weeks) — confirmed owner workload,
   left untouched; constrains us from upgrading the Docker engine casually.
+
+## 2026-06-13 (per-device DNS visibility + streaming dashboard, v0.4)
+- **Per-device attribution was broken because the router proxies DNS.** In the FTL query log
+  almost everything showed up as the router IP `192.168.1.1` — devices were querying the router,
+  which forwarded to Pi-hole, collapsing every client into one. Fix is router-side: hand the Pi
+  out as the DHCP DNS server so clients query it directly. Pi-hole *already captures* every
+  domain (Netflix/ESPN/Samsung-TV/YouTube all visible) — the gap was attribution, not capture.
+- **Reserve the Pi's IP BEFORE rebooting the router.** Once clients are told to use the Pi
+  (`192.168.1.169`) as DNS, that IP must never move, or DNS dies house-wide. Set a DHCP
+  reservation by MAC (`d8:3a:dd:5e:ab:97`) first. Done on the CR1000A 2026-06-13.
+- **Verizon CR1000A** exposes the handed-out DNS as "IPv4 DNS Address 1/2"; leave #2 blank so
+  devices can't fall back to a public resolver and bypass ad-block. Whether this field is the
+  LAN-handout vs WAN-upstream DNS is firmware-ambiguous — verify empirically via the query log
+  after a reboot; if clients still collapse to `192.168.1.1`, flip Pi-hole to run DHCP instead.
+- **`sqlite3` and `pihole-FTL` are not on the host** — Pi-hole runs as a container here. Query
+  the FTL DB with `docker exec pihole pihole-FTL sqlite3 /etc/pihole/pihole-FTL.db "<SQL>"`.
+- **SQLite can't open a WAL database read-only.** A `:ro` bind mount of the pihole volume fails
+  because SQLite must write the `-shm` wal-index. Mount RW and use `PRAGMA query_only=ON`.
+- **mem_limit is silently discarded on this Pi kernel** ("kernel does not support memory limit
+  capabilities") — harmless, but don't rely on cgroup memory caps on pi-node1.

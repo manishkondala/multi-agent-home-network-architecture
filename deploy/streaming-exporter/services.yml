@@ -1,0 +1,69 @@
+# Domain -> service mapping for the streaming-exporter.
+# A query's domain is lowercased and matched if it CONTAINS any pattern below
+# (substring match, first service wins by file order). DNS is domain-level only,
+# so this groups the messy CDN domains each service spreads across into one label.
+# Add a service or pattern here and redeploy — no code change needed.
+services:
+  YouTube:
+    - googlevideo.com
+    - youtube.com
+    - youtubei.googleapis.com
+    - youtube-nocookie.com
+    - ytimg.com
+    - yt3.ggpht.com
+  Netflix:
+    - netflix.com
+    - nflxvideo.net
+    - nflximg.net
+    - nflxext.com
+    - nflxso.net
+  Disney+/ESPN:
+    - dssott.com
+    - disneyplus.com
+    - disney-plus.net
+    - bamgrid.com
+    - espn.com
+    - espn.go.com
+  Hulu:
+    - hulu.com
+    - hulustream.com
+    - huluim.com
+  Peacock:
+    - peacocktv.com
+  Max/HBO:
+    - max.com
+    - hbomax.com
+    - hbomaxcdn.com
+    - discomax.com
+  Prime Video:
+    - aiv-cdn.net
+    - aiv-delivery.net
+    - primevideo.com
+    - amazonvideo.com
+    - pv-cdn.net
+  Paramount+:
+    - paramountplus.com
+    - cbsivideo.com
+    - pplusstatic.com
+  Apple TV:
+    - tv.apple.com
+    - aod.itunes.apple.com
+  Spotify:
+    - spotify.com
+    - scdn.co
+    - spotifycdn.com
+  Twitch:
+    - twitch.tv
+    - ttvnw.net
+    - jtvnw.net
+  Samsung TV:
+    - samsungacr.com
+    - samsungcloudsolution.com
+    - samsungotn.net
+    - samsungtvservices.com
+  Roku:
+    - roku.com
+    - rokutime.com
+  Plex:
+    - plex.tv
+    - plex.direct

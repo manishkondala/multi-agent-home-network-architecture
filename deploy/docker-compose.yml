@@ -46,12 +46,32 @@ services:
     restart: unless-stopped
     mem_limit: 64m
 
+  # Classifies FTL DNS queries into streaming/services per client (feeds the
+  # "Streaming by service" dashboard). Image built on the Pi from ./streaming-exporter.
+  streaming-exporter:
+    build: ./streaming-exporter
+    image: streaming-exporter:0.1.0
+    container_name: streaming-exporter
+    networks: [fleet]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      # RW because FTL keeps the DB in WAL mode (read-only mount can't open it);
+      # the exporter only ever issues SELECTs (PRAGMA query_only).
+      - pihole-data:/etc/pihole
+    depends_on: [pihole]
+    restart: unless-stopped
+    mem_limit: 96m
+
   # ---------- Observability ----------
   prometheus:
     image: prom/prometheus:v2.53.4
     container_name: prometheus
     networks: [fleet]
-    ports: ["9090:9090"]
+    # Locked: bound to the Pi's loopback only — no LAN access (no native auth).
+    # Grafana reaches it via the internal fleet network (http://prometheus:9090);
+    # Pi-host scripts (sentinel) use localhost. Query from the Mac via ssh+localhost.
+    ports: ["127.0.0.1:9090:9090"]
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=15d
@@ -91,7 +111,9 @@ services:
     image: grafana/loki:2.9.10
     container_name: loki
     networks: [fleet]
-    ports: ["3100:3100"]
+    # Locked: loopback-only (no native auth). Grafana/promtail use the internal
+    # network (http://loki:3100); logs are browsed via Grafana Explore.
+    ports: ["127.0.0.1:3100:3100"]
     command: -config.file=/etc/loki/loki-config.yml
     volumes:
       - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro

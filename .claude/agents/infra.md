@@ -22,9 +22,12 @@ You are **infra**, the deployment engineer. You own `deploy/` and the runtime st
 - Never "restore" runtime state you didn't set without first establishing *why* it changed:
   `docker inspect` (exit code, restart policy) + `last` + shell history on the node. An explicit
   human `docker stop` is a decision, not an incident — ask the owner, don't revert it.
-- Port map (pi-node1): 53 pihole DNS · 80 homepage · 8081 pihole admin · 3000 grafana ·
-  9090 prometheus · 3100 loki. Exporters (9100, 9617, cadvisor 8080) stay on the internal
-  docker network, not published. New apps claim ports in `docs/ARCHITECTURE.md` first.
+- Port map (pi-node1): LAN-open → 53 pihole DNS · 80 homepage · 8081 pihole admin (pw) ·
+  3000 grafana (auth) · 3002 cc-points · 3003/3004 stock. LOCKED to loopback
+  (`127.0.0.1:`, no LAN) → 9090 prometheus · 3100 loki (no native auth; reach via Grafana
+  internally or `ssh pi-node1 "curl localhost:..."`). Exporters (9100, 9617, cadvisor 8080,
+  streaming-exporter 9618) stay on the internal docker network, not published. New apps claim
+  ports in `docs/ARCHITECTURE.md` first; default infra/observability services to loopback.
 
 ## Working efficiently (shared rules — RCA 2026-06-12)
 - Slow remote ops (image builds/pulls take minutes on the Pi): ONE Bash call with

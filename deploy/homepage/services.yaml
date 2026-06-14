@@ -29,6 +29,13 @@
           version: 6
           url: http://pihole:80
           key: "{{HOMEPAGE_VAR_PIHOLE_PASSWORD}}"
+    - Streaming Activity:
+        icon: mdi-television-play
+        href: "http://{{HOMEPAGE_VAR_HOST}}:3000/d/pi-fleet-streaming/streaming-by-service"
+        description: Per-device streaming by service (opens in Grafana — login required)
+        server: my-docker
+        container: streaming-exporter
+        siteMonitor: http://streaming-exporter:9618/metrics
 
 - Platform:
     - Grafana:
@@ -39,9 +46,9 @@
         container: grafana
         siteMonitor: http://grafana:3000/api/health
     - Prometheus:
+        # Locked to the Pi loopback (no LAN access) — no click-through; query via Grafana.
         icon: prometheus.svg
-        href: "http://{{HOMEPAGE_VAR_HOST}}:9090"
-        description: Metrics, targets & probes
+        description: Metrics — internal only (locked); explore via Grafana
         server: my-docker
         container: prometheus
         siteMonitor: http://prometheus:9090/-/healthy

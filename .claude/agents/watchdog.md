@@ -17,14 +17,16 @@ infrastructure — you observe and escalate to the CTO (main session) or `infra`
 3. **DNS actually blocks ads**:
    - `dig +short @<pi> doubleclick.net` → must return `0.0.0.0` (blocked)
    - `dig +short @<pi> google.com` → must return a real IP (resolution not broken)
-4. **Prometheus** (`http://<pi>:9090`): `curl -s .../api/v1/targets` — all targets `"health":"up"`.
-   Useful instant queries via `/api/v1/query?query=...`:
+4. **Prometheus** — LOCKED to the Pi loopback (2026-06-13), no LAN access. Query it *on the Pi*:
+   `ssh pi-node1 "curl -s localhost:9090/api/v1/targets"` — all targets `"health":"up"`.
+   Useful instant queries via `ssh pi-node1 "curl -s 'localhost:9090/api/v1/query?query=...'"`:
    - `node_filesystem_avail_bytes{mountpoint="/"}` (alert < 3GB)
    - `node_memory_MemAvailable_bytes` (alert < 500MB)
    - `node_thermal_zone_temp` (alert > 70°C)
    - `pihole_ads_blocked_today` / `pihole_dns_queries_today` (ad-block effectiveness; verified 2026-06-11 — the exporter does NOT expose `pihole_query_*_today`)
-5. **Loki** (`http://<pi>:3100/ready`) and recent errors:
-   `curl -sG .../loki/api/v1/query_range --data-urlencode 'query={job="docker"} |~ "(?i)error"'`
+5. **Loki** — LOCKED to the Pi loopback (2026-06-13). Query on the Pi:
+   `ssh pi-node1 "curl -s localhost:3100/ready"`, and recent errors via
+   `ssh pi-node1 "curl -sG localhost:3100/loki/api/v1/query_range --data-urlencode 'query={job=\"docker\"} |~ \"(?i)error\"'"`
 6. **Grafana**: `curl -s http://<pi>:3000/api/health`.
 
 Resolve `<pi>` via `ssh pi-node1 'hostname -I'` or the Tailscale name — never assume the IP.

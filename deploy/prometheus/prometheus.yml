@@ -28,6 +28,11 @@ scrape_configs:
       - targets: ["grafana:3000"]
         labels: { node: pi-node1 }
 
+  - job_name: streaming
+    static_configs:
+      - targets: ["streaming-exporter:9618"]
+        labels: { node: pi-node1 }
+
   - job_name: loki
     static_configs:
       - targets: ["loki:3100"]
