@@ -35,7 +35,12 @@ services:
     mem_limit: 512m
 
   pihole-exporter:
-    image: ekofr/pihole-exporter:v1.2.0
+    # noobExtendsBot's fork of ekofr/pihole-exporter, which speaks Pi-hole v6's new
+    # session REST API. Upstream ekofr (v1.2.0) only knows the v5 /admin/api.php API
+    # and 401s against our v6.0.6 FTL, so its dashboard went blank. The fork renamed
+    # a few metrics/labels vs the v5 schema; Prometheus normalizes them back (see
+    # deploy/prometheus/prometheus.yml). Pinned by digest of :latest (2026-06-14).
+    image: ghcr.io/noobextendsbot/pihole-exporter@sha256:abbec6b8ee80e8aefda91823210c208dd724fe08e1493b8c5bdef717548be4b0
     container_name: pihole-exporter
     networks: [fleet]
     environment:

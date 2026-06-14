@@ -124,3 +124,19 @@ promtail pushes internally; sentinel/report scripts run on the Pi and use `local
 LAN-open. Net LAN-open surface: DNS 53, homepage 80, pihole-admin 8081, grafana 3000, and the
 apps 3002/3003/3004. Off-Pi queries to Prometheus/Loki now go via `ssh pi-node1 "curl
 localhost:..."` (watchdog/infra docs updated to match).
+
+## 2026-06-14 — Pi-hole v6 exporter: switch to a community fork, normalise in Prometheus
+Pi-hole upgraded to v6 (new session REST API); the long-standing `ekofr/pihole-exporter` only
+speaks the removed v5 `/admin/api.php`, so its Grafana dashboard went blank (401 -> scrape
+timeout). Considered: (a) `bazmonk/pihole6_exporter` — purpose-built for v6 but a whole new
+metric schema, ships as a Python/systemd script (no Docker image / arm64), so it would mean a
+dashboard rebuild and a non-Docker deploy; (b) `noobExtendsBot/pihole-exporter` — a fork of
+ekofr that adds v6 support, multi-arch Docker image, keeps **most** of the original metric
+names. Chose (b): smallest blast radius, stays Docker-on-the-Pi, dashboard preserved.
+Its handful of renamed metrics/labels (and a missing `hostname` label) are mapped back to the
+ekofr schema in `prometheus.yml` `metric_relabel_configs` rather than editing every panel — the
+mapping lives in one reviewable place and the upstream dashboard JSON stays untouched. Image is
+pinned by digest (tags are mutable commit-SHAs, no semver). Known cost: the fork double-emits
+`pihole_upstream_queries` for one.one.one.one (dup series fails the whole scrape), so that
+metric is dropped and the forward-destinations panel is empty. Revisit if ekofr ever ships v6
+support, or move to a maintained v6-native exporter + its own dashboard.

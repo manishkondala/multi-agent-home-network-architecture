@@ -20,8 +20,52 @@ scrape_configs:
 
   - job_name: pihole
     static_configs:
+        # hostname: the ekofr exporter used to emit this label (from PIHOLE_HOSTNAME);
+        # the v6 fork doesn't, and the Grafana dashboard's $node var is
+        # label_values(pihole_ads_blocked_today, hostname). Inject it here.
       - targets: ["pihole-exporter:9617"]
-        labels: { node: pi-node1 }
+        labels: { node: pi-node1, hostname: pi-node1 }
+    # The pihole-exporter image is noobExtendsBot's Pi-hole v6 fork. It renamed several
+    # metrics/labels vs the v5 schema the "Pi-hole Exporter" dashboard expects, so map
+    # them back here instead of rewriting every panel. See docs/DECISIONS.md.
+    metric_relabel_configs:
+      # The fork emits pihole_upstream_queries{upstream="one.one.one.one"} twice (IPv4
+      # + IPv6 both reverse-resolve to the same name) -> duplicate series, which makes
+      # Prometheus roll back the WHOLE scrape. Drop it; the forward-destinations panel
+      # stays empty but every other panel works.
+      - source_labels: [__name__]
+        regex: pihole_upstream_queries
+        action: drop
+      # metric renames: fork name -> ekofr/dashboard name
+      - source_labels: [__name__]
+        regex: pihole_dns_queries_today
+        target_label: __name__
+        replacement: pihole_dns_queries_all_types
+      - source_labels: [__name__]
+        regex: pihole_gravity_domains_being_blocked
+        target_label: __name__
+        replacement: pihole_domains_being_blocked
+      - source_labels: [__name__]
+        regex: pihole_clients_ever_seen
+        target_label: __name__
+        replacement: pihole_unique_clients
+      - source_labels: [__name__]
+        regex: pihole_query_type
+        target_label: __name__
+        replacement: pihole_querytypes
+      - source_labels: [__name__]
+        regex: pihole_reply_type
+        target_label: __name__
+        replacement: pihole_reply
+      # label-key renames the dashboard legends expect ({{type}})
+      - source_labels: [query_type]
+        regex: (.+)
+        target_label: type
+      - source_labels: [reply_type]
+        regex: (.+)
+        target_label: type
+      - regex: "query_type|reply_type"
+        action: labeldrop
 
   - job_name: grafana
     static_configs:

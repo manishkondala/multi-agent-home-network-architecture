@@ -214,3 +214,49 @@ Reviewed both watchdog reports, git log, and three incidents. Findings → instr
   not a layout rewrite. Real DOM selectors come from the rendered HTML, not guesswork.
 - **Owner apps' mobile layout is in their own repos** — a Homepage custom.css can't reach inside
   the cc-points/stock iframes-or-links; those are separate frontend fixes (owner deferred them).
+
+## 2026-06-14 (Pi-hole exporter blank dashboard — v6 API + bind-mount inode)
+- **ekofr/pihole-exporter is v5-only; it 401s against Pi-hole v6.** FTL v6 removed the legacy
+  `/admin/api.php` (and `setupVars.conf`) in favour of a session REST API (`POST /api/auth` ->
+  SID). ekofr `v1.2.0` (its newest release, Jul 2025) still hits the v5 endpoint, so it 401s
+  then its `/metrics` hangs -> Prometheus scrape `context deadline exceeded` -> blank dashboard.
+  Confirm the password is fine independently: `curl -s -X POST http://127.0.0.1:8081/api/auth -d
+  '{"password":"<pw>"}'` should return `"valid":true`. (Pi-hole admin is on host **8081**;
+  host **:80** is the Homepage Next.js app — do not test the API there, it 404s.)
+- **Fix: swap to noobExtendsBot/pihole-exporter** (`ghcr.io/noobextendsbot/pihole-exporter`,
+  multi-arch incl. arm64, same env vars + port 9617), pinned by digest. It speaks the v6 API
+  with the same `PIHOLE_PASSWORD` (web password works; no app-password needed).
+- **The fork renamed metrics/labels** vs the ekofr schema the Grafana dashboard expects.
+  Normalised back in Prometheus `metric_relabel_configs` (not by editing 14 panels):
+  `dns_queries_today`->`dns_queries_all_types`, `gravity_domains_being_blocked`->
+  `domains_being_blocked`, `clients_ever_seen`->`unique_clients`, `query_type`->`querytypes`
+  (+label `query_type`->`type`), `reply_type`->`reply` (+`reply_type`->`type`). Also the fork
+  drops the `hostname` label ekofr emitted, which the dashboard `$node` var needs
+  (`label_values(pihole_ads_blocked_today, hostname)`) — re-added via the static_configs target
+  label `hostname: pi-node1`.
+- **The fork emits a duplicate series** `pihole_upstream_queries{upstream="one.one.one.one"}`
+  twice (IPv4+IPv6 reverse-resolve identically). Prometheus rolls back the **entire scrape** on
+  any duplicate sample, so this one bug would blank everything — dropped that metric via
+  relabel. Cost: the forward-destinations panel stays empty.
+- **GOTCHA: single-file bind-mounted configs do not update on `compose up -d` after rsync.**
+  `rsync` writes a temp file and renames it (new inode); the running container is bound to the
+  **old inode**, so a SIGHUP reload re-reads the *stale* file (`prometheus_config_last_reload
+  _successful=1` lies — it reloaded the old content). Verify with
+  `docker exec prometheus grep -c metric_relabel_configs /etc/prometheus/prometheus.yml`. Fix is
+  `docker compose up -d --force-recreate prometheus` so the bind mount re-resolves to the new
+  file. `scripts/deploy.sh` does plain `compose up -d`, so **config-only changes to mounted
+  files silently no-op** — force-recreate (or restart) the affected service after deploy.
+
+## 2026-06-14 (streaming-exporter down on a non-UTF-8 domain — found while verifying the fleet)
+- **A malformed FTL `domain` value can permanently down the streaming-exporter.** FTL logged a
+  query whose `domain` held non-UTF-8 bytes (`192.168.1.198:443\xed http`). Python sqlite3's
+  default `text_factory` decodes TEXT as **strict** UTF-8 and *raises*, aborting the whole
+  scrape; because the bad row sits inside the 7-day baseline window, every cycle re-hit it ->
+  `pihole_streaming_exporter_up=0` for ~7.6h (separate from, and predating, the v6 exporter
+  fix). Fix: `con.text_factory = lambda b: b.decode("utf-8","replace")` in `connect()` — junk
+  domains never match a service pattern, so tolerant decode just skips them. Rebuild with
+  `scripts/deploy.sh --build streaming-exporter`.
+- **Process note:** "is the pihole exporter fixed?" is not "is the fleet healthy?" — always sweep
+  all Prometheus targets *and* exporter self-health gauges (`*_up`), not just container status.
+  `streaming` target read `up` (its /metrics served fine) while `pihole_streaming_exporter_up`
+  was 0 — container-level and target-level checks both missed it.

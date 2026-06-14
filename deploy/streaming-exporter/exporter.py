@@ -53,6 +53,12 @@ def classify(domain):
 
 def connect():
     con = sqlite3.connect(DB, timeout=15)
+    # FTL occasionally logs a malformed query whose `domain` holds non-UTF-8 bytes
+    # (seen: '192.168.1.198:443\xed http'). The default text_factory decodes TEXT as
+    # strict UTF-8 and *raises*, which aborts the whole scrape — and because the bad
+    # row sits in the baseline window, the exporter stays down permanently. Decode
+    # tolerantly instead; such junk domains never match a service pattern anyway.
+    con.text_factory = lambda b: b.decode("utf-8", "replace")
     con.execute("PRAGMA query_only=ON;")
     con.execute("PRAGMA busy_timeout=15000;")
     return con
