@@ -3,7 +3,14 @@
 # (substring match, first service wins by file order). DNS is domain-level only,
 # so this groups the messy CDN domains each service spreads across into one label.
 # Add a service or pattern here and redeploy — no code change needed.
+#
+# This is a curated ~50 of the most-used streaming apps. It is an allowlist: a
+# service only shows up once it is mapped here, so a brand-new service stays
+# invisible until added (this is the known limitation of DNS-based classification).
+# PROPOSED (not built yet): a "top unclassified domains" exporter metric + dashboard
+# panel so unmapped streaming traffic is at least visible and can be mapped here.
 services:
+  # ---------- Video: major SVOD/AVOD ----------
   YouTube:
     - googlevideo.com
     - youtube.com
@@ -30,6 +37,13 @@ services:
     - huluim.com
   Peacock:
     - peacocktv.com
+  Fox One:
+    # Fox's DTC streaming service. Video rides foxdtc-video.akamaized.net +
+    # *.foxdtc.digitalvideoplatform.com; control/API on fox.com/foxplus.com/kts.fox.
+    - foxdtc
+    - foxplus.com
+    - fox.com
+    - kts.fox
   Max/HBO:
     - max.com
     - hbomax.com
@@ -48,22 +62,119 @@ services:
   Apple TV:
     - tv.apple.com
     - aod.itunes.apple.com
-  Spotify:
-    - spotify.com
-    - scdn.co
-    - spotifycdn.com
-  Twitch:
-    - twitch.tv
-    - ttvnw.net
-    - jtvnw.net
-  Samsung TV:
-    - samsungacr.com
-    - samsungcloudsolution.com
-    - samsungotn.net
-    - samsungtvservices.com
-  Roku:
+  # ---------- Video: free/ad-supported (FAST) ----------
+  Tubi:
+    - tubitv.com
+    - adrise.tv
+  Pluto TV:
+    - pluto.tv
+    - plutotv.net
+  Crackle:
+    - crackle.com
+  Roku Channel:
     - roku.com
     - rokutime.com
   Plex:
     - plex.tv
     - plex.direct
+  Vimeo:
+    - vimeo.com
+  Dailymotion:
+    - dailymotion.com
+    - dmcdn.net
+  # ---------- Video: premium add-ons / niche ----------
+  Discovery+:
+    - discoveryplus.com
+  Starz:
+    - starz.com
+  Showtime:
+    - showtime.com
+    - sho.com
+  AMC+:
+    - amcplus.com
+    - amcn.com
+  Crunchyroll:
+    - crunchyroll.com
+    - crunchyroll.net
+  BritBox:
+    - britbox.com
+  Acorn TV:
+    - acorn.tv
+  Mubi:
+    - mubi.com
+  Shudder:
+    - shudder.com
+  Curiosity Stream:
+    - curiositystream.com
+  Fandango at Home:
+    - vudu.com
+  # ---------- Live TV bundles ----------
+  Sling TV:
+    - sling.com
+  FuboTV:
+    - fubo.tv
+    - fubo.com
+  DirecTV Stream:
+    - directv.com
+    - directvnow.com
+  Philo:
+    - philo.com
+  # ---------- Sports ----------
+  DAZN:
+    - dazn.com
+  NFL:
+    - nfl.com
+  NBA:
+    - nba.com
+  MLB.TV:
+    - mlb.com
+    - mlbstatic.com
+  NHL:
+    - nhl.com
+  # ---------- Music / audio ----------
+  Spotify:
+    - spotify.com
+    - scdn.co
+    - spotifycdn.com
+  Apple Music:
+    - music.apple.com
+  Amazon Music:
+    - music.amazon.com
+  Tidal:
+    - tidal.com
+  Pandora:
+    - pandora.com
+  SiriusXM:
+    - siriusxm.com
+  iHeartRadio:
+    - iheart.com
+  Deezer:
+    - deezer.com
+  SoundCloud:
+    - soundcloud.com
+    - sndcdn.com
+  # ---------- Game streaming ----------
+  Twitch:
+    - twitch.tv
+    - ttvnw.net
+    - jtvnw.net
+  Kick:
+    - kick.com
+  # ---------- International ----------
+  Hotstar:
+    - hotstar.com
+  SonyLIV:
+    - sonyliv.com
+  Zee5:
+    - zee5.com
+  BBC iPlayer:
+    - bbci.co.uk
+    - bbc.co.uk
+  ITVX:
+    - itv.com
+  # ---------- Smart-TV platform telemetry (not an app, but useful signal) ----------
+  Samsung TV:
+    - samsungacr.com
+    - samsungcloudsolution.com
+    - samsungotn.net
+    - samsungtvservices.com
