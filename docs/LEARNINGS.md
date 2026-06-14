@@ -202,3 +202,15 @@ Reviewed both watchdog reports, git log, and three incidents. Findings → instr
   because SQLite must write the `-shm` wal-index. Mount RW and use `PRAGMA query_only=ON`.
 - **mem_limit is silently discarded on this Pi kernel** ("kernel does not support memory limit
   capabilities") — harmless, but don't rely on cgroup memory caps on pi-node1.
+
+## 2026-06-13 (Homepage mobile responsiveness)
+- **Homepage auto-loads `custom.css`** placed in the config dir (`deploy/homepage/` →
+  `/app/config`), but serves it at **`/api/config/custom.css`** (not `/custom.css`) — the
+  rendered page links that path. Restart the container after adding it. Feature since v0.6.30.
+- **Homepage is mostly responsive already** (header uses `flex-wrap`; row-style service grids
+  collapse below the `lg` breakpoint). The squish on phones was the **header** cramming the
+  greeting + 5-stat `resources` widget + clock (all `text_size: xl`) into one row. Fix was a
+  `@media (max-width:640px)` block targeting `.information-widget-greeting/-datetime/-resource`,
+  not a layout rewrite. Real DOM selectors come from the rendered HTML, not guesswork.
+- **Owner apps' mobile layout is in their own repos** — a Homepage custom.css can't reach inside
+  the cc-points/stock iframes-or-links; those are separate frontend fixes (owner deferred them).
