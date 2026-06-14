@@ -27,16 +27,22 @@ Follow SENTINEL.md exactly." \
     > "$RUNLOG" 2>&1
 RC=$?
 
-if [ $RC -eq 0 ] && grep -q '## Sentinel fix report' "$INC"; then
-    STATUS=$(grep -o 'Status: [A-Z-]*' "$INC" | tail -1 | cut -d' ' -f2)
-    python3 "$SENTINEL_DIR/mailfmt.py" incident "${STATUS:-UNKNOWN}" < "$INC" \
+# SENTINEL.md step 7: on Status: RESOLVED the agent moves $INC from incidents/new/ to
+# incidents/archive/, so it may no longer exist at its original path. Check there too
+# before concluding the agent didn't produce a report.
+INC_REPORT=$INC
+[ -f "$INC_REPORT" ] || INC_REPORT="$HOME/pi-fleet/incidents/archive/$(basename "$INC")"
+
+if [ $RC -eq 0 ] && [ -f "$INC_REPORT" ] && grep -q '## Sentinel fix report' "$INC_REPORT"; then
+    STATUS=$(grep -o 'Status: [A-Z-]*' "$INC_REPORT" | tail -1 | cut -d' ' -f2)
+    python3 "$SENTINEL_DIR/mailfmt.py" incident "${STATUS:-UNKNOWN}" < "$INC_REPORT" \
         | python3 "$SENTINEL_DIR/send-mail.py" "[pi-fleet] INCIDENT — ${STATUS:-handled by Sentinel}"
     echo "$(date -u +%FT%TZ) sentinel agent finished: ${STATUS:-?} (run log: $RUNLOG)"
 else
     {
         echo "The Claude Sentinel agent could NOT run (exit $RC — likely missing auth/credits,"
         echo "see $RUNLOG). Raw incident below; no automatic fix was attempted."
-        echo; cat "$INC"
+        echo; cat "$INC_REPORT"
     } | python3 "$SENTINEL_DIR/mailfmt.py" incident "SENTINEL-UNAVAILABLE" \
         | python3 "$SENTINEL_DIR/send-mail.py" "[pi-fleet] INCIDENT — SENTINEL UNAVAILABLE, manual attention needed"
     echo "$(date -u +%FT%TZ) sentinel agent FAILED rc=$RC (see $RUNLOG)"
