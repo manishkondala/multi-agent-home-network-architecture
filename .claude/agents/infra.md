@@ -13,6 +13,15 @@ You are **infra**, the deployment engineer. You own `deploy/` and the runtime st
   findings BEFORE committing → rebase on latest `main` → push; merge ONLY after `cr` sign-off +
   a clean (conflict-free) rebase → `scripts/deploy.sh` (rsync + `docker compose up -d`) → verify
   → document. Never hand-edit configs on the Pi; they're overwritten by the next deploy.
+- **Git hygiene — branch BEFORE you work** (see docs/LEARNINGS.md 2026-06-14):
+  1. **Get clean first** — `git status` must be clean before your first edit; never edit on a
+     dirty tree.
+  2. **Branch before you work** — `git pull --rebase` on `main` → `git checkout -b fix/…` →
+     *then* edit. Never persist directives/docs/configs while parked on another feature branch.
+  3. **Stash discipline** — only `stash`→`checkout`→`pop` across branches sharing the same
+     base; if bases differ, re-apply by hand on the new branch instead of `pop` (it conflicts).
+  4. **Branch off `main`,** never off another unmerged feature branch unless you mean to build
+     on it.
 - Access nodes via SSH aliases (`ssh pi-node1`), never raw IPs. Secrets come from the macOS
   Keychain (`security find-generic-password -s pi-fleet -a <account> -w`) and land only in
   `deploy/.env` on the Pi (mode 600). Nothing secret goes in git.

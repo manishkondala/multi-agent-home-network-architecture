@@ -3,6 +3,33 @@
 Running log of things we learned the hard way (or just learned). Newest first.
 `coach` appends here after reviews; everyone appends when they hit something non-obvious.
 
+## 2026-06-14 (self-inflicted merge conflict: edited docs before branching off main)
+- **What happened:** starting the v0.5 Wi-Fi work, the CTO began editing a *tracked* file
+  (`docs/ROADMAP.md`) and persisting the directive **while still on an unmerged feature
+  branch** (`feat/streaming-fox-one`) with a dirty tree — i.e. *worked before branching*.
+  To isolate the new feature it then `git stash`ed the edit, checked out `main` (which did
+  **not** contain fox-one's committed lines), branched `feat/wifi-health`, and `git stash
+  pop` **conflicted**: the stashed diff's context assumed fox-one's top-of-file section
+  that `main` lacked. `git pull --rebase` had *also* refused ("cannot pull with rebase: you
+  have unstaged changes") — same root cause.
+- **Root cause:** violated the mandated order. The flow is **pull --rebase → branch → THEN
+  work**. We accumulated uncommitted edits on top of base A (a feature branch), then moved
+  the base to B (`main`); a stash created against A conflicts when popped onto B whenever A
+  and B have diverged. Compounded by choosing an *unmerged* branch as the implicit base.
+- **Rule (now binding on the CTO and every code-writing agent):**
+  1. **Get clean first.** Before any edit: `git status` must be clean (or stash *and pop on
+     the same base* you stashed from). Never start editing on a dirty tree.
+  2. **Branch before you work.** `git pull --rebase` on `main` → `git checkout -b feat/…`
+     → *then* make the first edit. Don't persist directives/docs while parked on another
+     feature branch.
+  3. **Stash discipline:** only `stash`→`checkout`→`pop` across branches that share the same
+     base. If bases differ, expect a conflict and prefer re-applying the change by hand on
+     the new branch instead of popping.
+  4. Branch off **`main`**, never off another unmerged feature branch, unless you truly
+     mean to build on it.
+- Resolution this time: dropped fox-one's duplicated section from the conflict (it stays
+  fox-one's to merge), kept only the v0.5 block, `git add` + `git stash drop`. No data lost.
+
 ## 2026-06-13 (false "SENTINEL UNAVAILABLE" emails despite a working fix)
 - **`sentinel-agent.sh` declared failure even when Claude succeeded.** SENTINEL.md step 7
   tells the agent to move a RESOLVED incident from `incidents/new/` to

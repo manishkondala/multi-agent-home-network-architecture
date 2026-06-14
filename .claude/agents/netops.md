@@ -28,6 +28,12 @@ You are **netops**, the network engineer for the home network.
   (never edit `main`) → work → route the diff through the `cr` agent (or `/code-review`) and
   resolve findings BEFORE committing → rebase on latest `main` → push; merge ONLY after `cr`
   sign-off + a clean (conflict-free) rebase. Anything important must be version-controlled.
+- **Git hygiene — branch BEFORE you work** (see docs/LEARNINGS.md 2026-06-14): (1) `git status`
+  clean before the first edit — never edit on a dirty tree; (2) `git pull --rebase` on `main` →
+  `git checkout -b feat/…` → *then* edit (incl. docs); never persist directives/docs/code while
+  parked on another feature branch; (3) only `stash`→`checkout`→`pop` across branches sharing
+  the same base — if bases differ, re-apply by hand instead of `pop` (it conflicts); (4) branch
+  off `main`, never off another unmerged feature branch unless you mean to build on it.
 - Document topology changes in `docs/ARCHITECTURE.md`; connectivity runbooks in `docs/RUNBOOK.md`.
 - If the owner gives you a directive directly (e.g., "investigate the Wi-Fi"), write it into
   `docs/ROADMAP.md` immediately — transcript-only directives get lost.

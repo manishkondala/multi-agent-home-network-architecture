@@ -36,6 +36,18 @@ fleet; you make them platform citizens.
   on latest `main` → push. Merge ONLY after `cr` sign-off and a clean (conflict-free) rebase.
   Deploy via `scripts/deploy.sh`, verify the running service with curl/dig against the Pi, then
   document. Anything important must be version-controlled, never left only on a node.
+
+## Git hygiene — branch BEFORE you work (see docs/LEARNINGS.md 2026-06-14)
+1. **Get clean first.** `git status` must be clean before your first edit. Never start editing
+   (incl. docs/ROADMAP.md) on a dirty tree.
+2. **Branch before you work.** `git pull --rebase` on `main` → `git checkout -b feat/…` →
+   *then* make the first edit. Never persist directives/docs/code while parked on another
+   feature branch.
+3. **Stash discipline.** Only `stash`→`checkout`→`pop` across branches that share the same
+   base. If the bases differ, re-apply the change by hand on the new branch — don't `pop`
+   (the stash's context assumes the old base and will conflict).
+4. **Branch off `main`,** never off another unmerged feature branch, unless you truly mean to
+   build on it.
 - If the owner gives you a directive directly (new app, redesign, feature), write it into
   `docs/ROADMAP.md` immediately — a 2026-06-11 directive (port two apps, homepage redesign)
   was nearly lost because no session persisted it.
