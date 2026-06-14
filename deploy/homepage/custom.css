@@ -1,0 +1,42 @@
+/* pi-fleet — mobile responsiveness fixes.
+ * Auto-loaded by Homepage from /app/config/custom.css (feature since v0.6.30).
+ * Desktop is untouched; everything below only applies on phone-width screens.
+ * Selectors verified against the rendered DOM (information-widget-*, resource-*). */
+
+@media (max-width: 640px) {
+  /* Never allow the page to scroll/squish sideways. */
+  html, body { overflow-x: hidden; max-width: 100vw; }
+
+  /* Header: tighter margins so it doesn't eat the screen. */
+  #information-widgets {
+    margin: 0.75rem !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0.75rem !important;
+  }
+  #widgets-wrap { gap: 0.4rem 0.6rem; }
+
+  /* Greeting + clock are text-size: xl in the config — far too wide for a phone. */
+  .information-widget-greeting span,
+  .information-widget-datetime span {
+    font-size: 1.05rem !important;
+    line-height: 1.35 !important;
+  }
+
+  /* The 5 host-resource stats (CPU/temp/RAM/disk/uptime): shrink and let them
+     wrap onto multiple lines instead of cramming into one overflowing row. */
+  #information-widgets-right { width: 100%; }
+  .information-widget-resource {
+    margin-right: 0.5rem !important;
+    font-size: 0.78rem !important;
+  }
+  .information-widget-resource .resource-icon {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  /* Belt-and-suspenders: any service/bookmark grid is one tile per row on a phone. */
+  #myservices [class*="grid-cols"],
+  #bookmarks [class*="grid-cols"] {
+    grid-template-columns: 1fr !important;
+  }
+}
