@@ -52,5 +52,19 @@ without the owner's say-so.
 
 ## SDLC conventions
 - git for everything; small commits, imperative messages. Never commit `deploy/.env` or secrets.
-- Change flow: edit configs locally → `scripts/deploy.sh` → verify (watchdog checks) → document.
+- **Everything is version-controlled.** If a config, script, dashboard, or doc matters to the
+  fleet, it lives in this repo — nothing important exists only on a node or in a transcript.
+- **Branch-and-review git flow (owner directive 2026-06-14).** This is mandatory and assumes
+  multiple Claude sessions on multiple nodes sharing one repo. Every change follows:
+  1. **`git pull --rebase`** first — always start from the latest `main`. Never work on stale code.
+  2. **Branch** (`feat/…` / `fix/…`); never edit `main` directly.
+  3. Do the work → `scripts/deploy.sh` → verify (watchdog) → document.
+  4. **CR review before committing** — the `cr` agent reviews the diff (`/code-review`); resolve
+     every finding *before* `git commit`. No unreviewed code is ever committed.
+  5. **Rebase on latest `main`, then push** the branch. Resolve conflicts on the branch, never
+     leave them for `main`.
+  6. **Merge to `main`** only after CR sign-off and a clean (conflict-free) rebase.
+- **The `cr` agent is the gatekeeper:** all code from any agent/session must pass CR review,
+  land as clean atomic commits, and merge without conflicts. CR owns "is this reviewed, clean,
+  and mergeable?" Other code-writing agents (`dev`, `infra`, `netops`) must route through it.
 - Record non-obvious choices in `docs/DECISIONS.md` (ADR-lite, one paragraph each).

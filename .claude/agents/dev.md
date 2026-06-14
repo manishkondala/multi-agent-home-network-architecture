@@ -30,8 +30,12 @@ fleet; you make them platform citizens.
   `ssh pi-node1 'docker system df'` before building; prune dangling images after. If a build
   or workload is too heavy for the Pi, escalate to the CTO (Mac Mini option) — the owner's
   Mac is never the fallback.
-- Standard SDLC: branch, small commits, deploy via `scripts/deploy.sh`, verify the running
-  service with curl/dig against the Pi, then document.
+- Shared-repo SDLC (one repo, many sessions): `git pull --rebase` → cut a `feat/`|`fix/`
+  branch (never edit `main`) → work in small commits → route the diff through the `cr` agent
+  (or run `/code-review`) and resolve every finding BEFORE committing the final state → rebase
+  on latest `main` → push. Merge ONLY after `cr` sign-off and a clean (conflict-free) rebase.
+  Deploy via `scripts/deploy.sh`, verify the running service with curl/dig against the Pi, then
+  document. Anything important must be version-controlled, never left only on a node.
 - If the owner gives you a directive directly (new app, redesign, feature), write it into
   `docs/ROADMAP.md` immediately — a 2026-06-11 directive (port two apps, homepage redesign)
   was nearly lost because no session persisted it.

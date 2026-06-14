@@ -1,5 +1,19 @@
 # Roadmap
 
+## Standing process change (owner directive 2026-06-14)
+Owner: branch-per-feature + a **CR agent** that reviews changes before they're committed, because
+multiple Claude sessions run on multiple nodes against one shared repo. Full intended flow per
+node: **pull (rebase) → branch → work → CR review → rebase → push → merge**, with the CR agent
+responsible for making sure all code from every agent is reviewed, cleanly committed, and merges
+**without conflicts**. And **everything everywhere is version-controlled** — nothing important
+lives only on a node or in a transcript.
+- [x] Recorded in `CLAUDE.md` (SDLC conventions) + memory.
+- [ ] **`coach` to create a `cr` agent** (`.claude/agents/cr.md`) and update `dev`/`infra`/`netops`
+      to route through it. Until then, the main session runs `/code-review` before each commit.
+- [ ] Decide CR mechanism at scale: `/code-review` skill vs a dedicated reviewer agent vs
+      `/code-review ultra` on PRs; and whether nodes push to a shared remote (origin) or sync via
+      one hub node. (Today: single node `pi-node1`, local repo on the Mac.)
+
 ## Now (v0.4 — per-device network visibility + streaming dashboard, owner directive 2026-06-13)
 Owner: "I want to see what domains are being accessed on my network — if I'm watching YouTube
 or Peacock, I want to know." Decision: **option C** — fix per-device visibility first, then
