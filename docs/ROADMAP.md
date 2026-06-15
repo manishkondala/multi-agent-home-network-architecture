@@ -123,7 +123,28 @@ teardown is heavy on a Pi 4 — consider a single long-lived worker looping over
 concurrency; the **Mac-mini** is the natural home when enrolled. (4) TCP metrics: capture via `ss`
 in the test container's netns keyed to the googlevideo CDN peers. (5) Lock = Grafana login
 (already admin-gated) is the cheap path; an in-app locked view reuses the v0.5 admin-password
-pattern. Phasing TBD after reading `vsc`. Routes through dev(build)/infra(deploy)/cr(review).
+pattern.
+
+**Status 2026-06-14: PARKED by the owner — "park everything now, we will pick this up later."**
+Scoped but not built (DNS-stability tradeoff of running headless Chromium nonstop on the Pi 4).
+- **`vsc` read (2023 Selenium tester at `/home/pi/vsc`, do NOT touch):** `controller.py` loops
+  forever spawning `main.py` (one Chrome session/run, ~30 min, killed on timeout). Metrics it
+  captured (`configs.py` `csv_header`) = resolution, buffering + buffering events, dropped frames,
+  frame rate, effective bitrate (video/audio/total) — all from YouTube `movie_player.
+  getStatsForNerds()` + the `<video>` element. It hand-pinned a `chromedriver.deb/.zip` (the
+  version-drift pain) and pushed to GCP BigQuery. ⚠️ `configs.py` has **hardcoded Gmail/GCP
+  secrets** (Hughes) — do NOT copy them.
+- **Agreed plan (rebuild, not copy) under `apps/test/video/youtube/`:** (1) install `chromium` +
+  `chromium-driver` from the same Debian apt repo so versions always match (fixes the drift), arm64;
+  (2) ONE long-lived worker looping continuously (not container spawn/teardown — lighter on a Pi):
+  pick a video → headless playback 5–15 min → poll `getStatsForNerds()` each second → next; (3)
+  disable QUIC so video uses TCP, then `ss -tin` the googlevideo CDN sockets for session TCP_INFO
+  (reuse wifi-health idea); (4) metrics → Prometheus → a NEW Grafana **`tests`** folder, dashboard
+  "YouTube Metrics"; (5) homepage **Network** tile → that dashboard, **locked via Grafana login**.
+- **Owner decisions 2026-06-14:** video source = **curated list of diverse stable IDs** (4K/HDR,
+  music, sports, nature, talk — no search/login). Run location = **decide at resume** (Pi capped vs
+  **Mac-mini**, which is the natural home and nearly enrolled). Resume here when ready.
+Routes through dev(build)/infra(deploy)/cr(review).
 
 ## Now (v0.4 — per-device network visibility + streaming dashboard, owner directive 2026-06-13)
 Owner: "I want to see what domains are being accessed on my network — if I'm watching YouTube
