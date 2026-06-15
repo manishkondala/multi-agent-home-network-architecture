@@ -66,8 +66,17 @@ Prometheus/Grafana).
       i.e. **microwave / non-Wi-Fi interference detection** — is **not** available; needs a
       survey-capable radio (USB adapter / Mac-mini). The exporter attempts survey each cycle and
       will light up automatically when such a radio exists.
-- [ ] **P3 — Per-device stats from the AP.** netops probes the CR1000A local API; if it exposes a
-      station list (RSSI/PHY rate/standard) → `wifi-router-exporter` per MAC. Else document the gap.
+- [~] **P3 — Per-device stats from the AP.** *Recon 2026-06-14 (from the Pi):* gateway
+      `192.168.1.1` = "Fios Router", 80/443 open, **no REST API** (`/api/*` → 404). It's CGI-based
+      and **auth-gated** (`/cgi/cgi_owl.js`, `/index.cgi` → 403 unauthenticated). Path forward =
+      an **authenticated scrape** (community `quantum-gateway` / Home-Assistant `quantum_gateway`
+      approach: log in with the admin password → session cookie → read the connected-devices page)
+      → `wifi-router-exporter` keyed by MAC. Likely yields **device presence + IP/hostname + band
+      (2.4/5 GHz)**, possibly negotiated link rate on some firmware, but **probably NOT RSSI /
+      802.11 standard** (Fios UI doesn't surface them). **Blocked on the owner:** put the CR1000A
+      **admin password** in Keychain (`security add-generic-password -s pi-fleet -a cr1000a-admin
+      -w '<pw>'`); then netops builds + verifies the scraper, documenting whatever RF fields the
+      firmware actually exposes.
 - [ ] **P4 — 7AM/7PM Wi-Fi section.** Extend the v0.3 `fleet-report.sh` email with all currently-
       connected devices' latest health + interference events (reuses the existing SMTP pipeline).
 - [ ] **P5 (experimental) — CSI motion/presence**, admin-only, on a dedicated radio / Mac-Mini era.
