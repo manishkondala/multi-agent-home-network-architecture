@@ -77,8 +77,17 @@ Prometheus/Grafana).
       **admin password** in Keychain (`security add-generic-password -s pi-fleet -a cr1000a-admin
       -w '<pw>'`); then netops builds + verifies the scraper, documenting whatever RF fields the
       firmware actually exposes.
-- [ ] **P4 — 7AM/7PM Wi-Fi section.** Extend the v0.3 `fleet-report.sh` email with all currently-
-      connected devices' latest health + interference events (reuses the existing SMTP pipeline).
+- [x] **P4 — 7AM/7PM Wi-Fi section** — done 2026-06-14. `fleet-report.sh` now has a `## Wi-Fi
+      health (per-device)` block: all currently-connected devices' latest check (RTT/loss/↓↑/room)
+      from the admin API + the busiest RF channels (`topk wifi_rf_channel_ap_count`) + the survey/
+      microwave gap note. Reuses the v0.3 SMTP pipeline; verified live.
+- [x] **In-app admin (per-device) view** — done 2026-06-14 (the "Both" decision's in-app half).
+      `/admin` on the wifi-health app, **password-locked** (`WIFI_ADMIN_PASSWORD`, from Keychain
+      `pi-fleet/wifi-admin` else reuses `grafana-admin`; sent as `X-Admin-Token`). Lists **all
+      devices on the LAN** — discovered by an **unprivileged TCP connect ARP-sweep** of the Pi's /24
+      (host-net container reads `ip neigh`), enriched with Pi-hole FTL hostnames/vendor + each
+      device's latest health check + live TCP_INFO. Verified: 18 LAN devices, auth-gated, docker
+      IPs filtered. Hostnames fill in as v0.4 per-device DNS + P3 land.
 - [ ] **P5 (experimental) — CSI motion/presence**, admin-only, on a dedicated radio / Mac-Mini era.
       House structural reconstruction stays parked as research.
 
@@ -89,6 +98,32 @@ Mac Mini lands.
 
 Routes through the standard flow: `dev` builds the app, `infra` deploys, `netops` owns the
 Wi-Fi/RF/router side, `cr` reviews before commit. Mac-Mini, when enrolled, hosts the heavy/CSI work.
+
+## Now (v0.6 — continuous YouTube QoE testing, owner directive 2026-06-14)
+Owner: there's a dir **`vsc` on the Pi** (do NOT change it) that continuously spawns/tears down
+containers, each running YouTube for 5–15 min and collecting **video-only QoE stats** (buffering,
+resolution, bitrate, etc.). It uses an **old chromedriver**. Take the *idea*, refactor into NEW
+code under **`apps/test/video/youtube/`** on the Pi (create `apps/test`, then `video`, then
+`youtube`). Requirements:
+- Run YouTube playback tests **continuously** across **different videos**, capturing **all video
+  QoE metrics** (buffering events/ratio, startup time, resolution, bitrate, dropped frames, …) and,
+  **if possible, the session's TCP metrics too** (reuse the wifi-health `ss -tin` TCP_INFO idea).
+- Write metrics to **Grafana under `pi-fleet/tests/`** (new dashboard folder/uid) — buffering,
+  resolution, other video metrics.
+- Homepage: under **Network**, add a tile **"YouTube Metrics"** → the dashboard, **locked** (only
+  the owner has the password — same gating approach as the v0.5 admin view / Grafana login).
+- The old `vsc` chromedriver is stale → **do what's needful** (modern Selenium/headless Chromium for
+  arm64, or the YouTube IFrame Player API + `movie_player.getStatsForNerds()` which exposes buffer
+  health/res/bitrate without scraping).
+
+**CTO notes (scope before building):** (1) Read `vsc` on the Pi first — reuse its approach. (2)
+arm64 headless Chromium + chromedriver is the classic pain point; the IFrame API / Stats-for-nerds
+JSON is likely more robust than scraping and lighter on the Pi. (3) Continuous container spawn/
+teardown is heavy on a Pi 4 — consider a single long-lived worker looping over videos, or cap
+concurrency; the **Mac-mini** is the natural home when enrolled. (4) TCP metrics: capture via `ss`
+in the test container's netns keyed to the googlevideo CDN peers. (5) Lock = Grafana login
+(already admin-gated) is the cheap path; an in-app locked view reuses the v0.5 admin-password
+pattern. Phasing TBD after reading `vsc`. Routes through dev(build)/infra(deploy)/cr(review).
 
 ## Now (v0.4 — per-device network visibility + streaming dashboard, owner directive 2026-06-13)
 Owner: "I want to see what domains are being accessed on my network — if I'm watching YouTube

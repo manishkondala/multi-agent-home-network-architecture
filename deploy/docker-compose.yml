@@ -209,10 +209,13 @@ services:
     environment:
       TZ: ${TZ}
       WIFI_PORT: "3005"
+      WIFI_ADMIN_PASSWORD: ${WIFI_ADMIN_PASSWORD}   # unlocks the in-app per-device admin view
+      WIFI_SUBNET: ${WIFI_SUBNET}                   # LAN to ARP-sweep for device discovery
     volumes:
       - /home/pi/apps/data/wifi-health:/data   # SQLite session log lives outside the image
+      - pihole-data:/etc/pihole                # FTL network table (SELECT-only) for device names
     restart: unless-stopped
-    mem_limit: 256m
+    mem_limit: 320m
 
   # Continuous RF / channel-occupancy sensing from wlan0 (roadmap v0.5 P2). eth0 carries
   # DNS, so wlan0 is free to dedicate to scanning. Host net + privileged to reach the

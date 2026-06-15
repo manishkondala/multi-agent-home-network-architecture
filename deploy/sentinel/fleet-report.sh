@@ -50,6 +50,32 @@ else echo "  none — nothing went down, nothing needed fixing"; fi
 NEWC=$(ls "$INCIDENT_DIR/new" 2>/dev/null | wc -l)
 [ "$NEWC" -gt 0 ] && echo "  >> $NEWC incident(s) awaiting agent RCA in incidents/new/"
 
+echo; echo "## Wi-Fi health (per-device)"
+WIFI_TOKEN=$(grep '^WIFI_ADMIN_PASSWORD=' "$HOME/pi-fleet/.env" 2>/dev/null | cut -d= -f2-)
+curl -s -m 8 -H "X-Admin-Token: $WIFI_TOKEN" "http://localhost:3005/api/admin/devices" \
+  | python3 -c "import sys,json
+try:
+    d=json.load(sys.stdin); devs=d.get('devices',[])
+    print(f\"  {d.get('active','?')}/{d.get('count','?')} devices active on {d.get('subnet','')}\")
+    for x in [v for v in devs if v.get('active')][:14]:
+        name=(x.get('hostname') or x.get('ip') or '?')[:24]; room=(x.get('room') or '-')[:12]
+        lc=x.get('last_check') or {}
+        if lc.get('rtt_ms') is not None:
+            h=f\"{lc['rtt_ms']:.0f}ms, {(lc.get('loss') or 0)*100:.0f}% loss, {lc.get('download_mbps','?')}/{lc.get('upload_mbps','?')} Mbps\"
+        else: h='no check run yet'
+        print(f\"  {name:24} {room:12} {h}\")
+    if not devs: print('  (no devices listed — admin disabled or ARP sweep empty)')
+except Exception as e: print(f'  (wifi-health admin API unavailable: {e})')"
+echo "  RF — busiest channels (neighbour AP count):"
+curl -s -m 8 "http://localhost:9090/api/v1/query" --data-urlencode "query=topk(4, wifi_rf_channel_ap_count)" \
+  | python3 -c "import sys,json
+try:
+    res=json.load(sys.stdin)['data']['result']
+    for r in res: m=r['metric']; print(f\"    ch {m.get('channel','?')} ({m.get('band','?')}): {r['value'][1]} APs\")
+    if not res: print('    (no RF data yet)')
+except Exception: print('    (rf query failed)')"
+echo "  note: microwave/noise-floor detection needs a survey-capable radio (onboard Broadcom can't — ROADMAP v0.5 P2)"
+
 echo; echo "## Sentinel"
 echo "  last check: $(cat "$STATE_DIR/last-run" 2>/dev/null || echo 'never') (runs every 3 min)"
 echo "  legacy jsms containers (must stay stopped): $(docker ps -a --format '{{.Names}}:{{.Status}}' | grep -E 'jsms|volhard|booth|shannon|jones' | awk -F: '{print $1"("$2")"}' | tr '\n' ' ')"

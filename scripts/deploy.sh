@@ -12,6 +12,10 @@ PIHOLE_PASSWORD=$(security find-generic-password -s pi-fleet -a pihole-web -w)
 GRAFANA_PASSWORD=$(security find-generic-password -s pi-fleet -a grafana-admin -w)
 PI_IP=$(ssh "$HOST" "hostname -I | awk '{print \$1}'")
 echo "==> pi-node1 LAN IP: $PI_IP"
+# In-app Wi-Fi admin (per-device) view: a dedicated Keychain secret if present, else reuse
+# grafana-admin so the admin view works out of the box. Subnet = the Pi's /24 (for the ARP sweep).
+WIFI_ADMIN_PASSWORD=$(security find-generic-password -s pi-fleet -a wifi-admin -w 2>/dev/null || printf '%s' "$GRAFANA_PASSWORD")
+WIFI_SUBNET=$(printf '%s' "$PI_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
 
 echo "==> Pausing sentinel during deploy"
 ssh "$HOST" "mkdir -p $REMOTE_DIR/sentinel && touch $REMOTE_DIR/sentinel/pause"
@@ -53,6 +57,8 @@ TZ=America/New_York
 PIHOLE_PASSWORD=$PIHOLE_PASSWORD
 GRAFANA_PASSWORD=$GRAFANA_PASSWORD
 HOMEPAGE_VAR_HOST=$PI_IP
+WIFI_ADMIN_PASSWORD=$WIFI_ADMIN_PASSWORD
+WIFI_SUBNET=$WIFI_SUBNET
 EOF
 
 echo "==> docker compose up"
