@@ -32,11 +32,22 @@ a Mac Mini compute node, more Pis).
 | Node | Access | Hardware | Role |
 |------|--------|----------|------|
 | pi-node1 | `ssh pi-node1` (alias in ~/.ssh/config, key auth) | Pi 4B 8GB, Debian 11, 29GB SD | DNS/ad-block + observability + app host |
-| mac-mini | (powered down, not yet enrolled) | old Mac Mini | future compute node |
+| pi-node2 | `ssh pi-node2` (alias, key auth — reuses `id_ed25519_pifleet`) | Mac mini 2014 (Macmini7,1), Intel i5-4278U 2c/4t, **8GB**, Intel Iris, **931GB disk**, macOS 12.7.6 | heavy/GUI tier: YouTube QoE 24/7, content-monetization, retention/backup, dead-Pi watcher (enrolled 2026-06-15) |
+| mac-mini | — | — | renamed → **pi-node2** (same box) |
 
 pi-node1's LAN IP is DHCP-assigned (192.168.1.169 as of 2026-06-11) — **never hardcode the IP**
 in configs; use the `pi-node1` SSH alias or the Tailscale MagicDNS name. If the IP changes,
 update `~/.ssh/config` and `deploy/.env` only.
+
+pi-node2 (the Mac mini) is at 192.168.1.207 (DHCP — **never hardcode**; use the `pi-node2` alias).
+It's Intel (x86-64), **not** Apple Silicon — no local ML; AI/content gen stays cloud (Higgsfield
+MCP / APIs). Its value = stable x86 headful-Chrome + 931GB disk + a sacrificial always-on worker.
+Sleep is **disabled** (`sudo pmset -a sleep 0 disablesleep 1 standby 0 powernap 0 womp 1
+autorestart 1`, set 2026-06-15) — required or it suspends SSH/TCP while still answering ping.
+Docker Desktop 4.78 **cannot run** on macOS 12 (needs 14) and this 2014 box can't upgrade past
+Monterey → container runtime = **Colima** (docker CLI/compose parity with the Pi); bot-sensitive
+social publishing runs **native macOS**, not in a container. The "nothing runs on the Mac" deny
+rule is **laptop-only** — pi-node2 is a legitimate Docker/compute host.
 
 ⚠️ pi-node1 has three pre-existing containers from the owner's old project (`jsms_worker-au`,
 `happy_shannon`, `adoring_jones`). The owner **deliberately stopped all three on 2026-06-11**

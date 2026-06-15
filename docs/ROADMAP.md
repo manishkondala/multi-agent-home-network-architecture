@@ -14,6 +14,61 @@ lives only on a node or in a transcript.
       `/code-review ultra` on PRs; and whether nodes push to a shared remote (origin) or sync via
       one hub node. (Today: single node `pi-node1`, local repo on the Mac.)
 
+## Now (v0.7 — Mac Mini enrollment + content-monetization platform, owner directive 2026-06-15)
+The **Mac Mini is up** and ready for SSH at **192.168.1.207** (IP is DHCP — do not hardcode; use
+the `mac-mini` alias / Tailscale name). Docker Desktop is **installed but not opened**; the box is
+**clean** (nothing on it). Owner won't share the password → key-only auth (reuse the fleet key
+`id_ed25519_pifleet`; owner runs `ssh-copy-id` so the CTO never sees the password).
+
+**Owner's sequence (do in this order):**
+1. **Setup** — key login + inspect Mac specs (OS, RAM, CPU, GPU) to know its capability, then a
+   **solid two-tier plan**: what stays on the Pi vs what moves to the Mac Mini. (this block)
+2. **YouTube QoE app** — the v0.6 containerized YouTube tester running **24/7 collecting video
+   data** — finally has a real home (the Mac Mini). Resume v0.6 here once tier plan lands.
+3. **Content-monetization platform (revenue side-gig, the big one)** — only after 1 & 2:
+   - Use the **Higgsfield MCP** to **generate content** about **FIFA + other daily news / upcoming
+     trends** — the doom-scroll-friendly stuff people watch.
+   - Auto-**publish & monetize** on **YouTube, Instagram, TikTok**. Owner will create **new YT /
+     TikTok / IG accounts and hand them to the CTO to maintain** — keep generating + publishing
+     new content on a schedule. These are **revenue-generating** side gigs.
+   - More such apps coming; owner will give requirements later. Build the platform **multi-tenant /
+     multi-account / multi-app** so each new gig is just another tenant.
+
+**CTO notes (capture, not yet built):** content gen + browser-driven social publishing + 24/7
+QoE is the **heavy/compute + GUI-capable** tier → **Mac Mini** (more RAM/CPU, real GPU, can run a
+desktop session for headful browser automation, Apple-silicon ML if it's an M-series). The Pi
+stays the **always-on, low-power network/DNS + observability anchor**. Higgsfield MCP, account
+credentials, and posting tokens are **secrets → Keychain (`pi-fleet`)**, never the repo. Social
+auto-posting has **ToS / rate-limit / ban risk** — design for human-in-the-loop review + per-
+account rate caps; flag this to the owner before going fully autonomous.
+
+**Setup status — RESOLVED 2026-06-15 (phase 1 done):**
+- [x] **Key login** — node aliased **`pi-node2`** (owner renamed from "mac-mini"), reuses the fleet
+      key `id_ed25519_pifleet`, `ssh pi-node2` works. Added to `~/.ssh/config`.
+- [x] **Specs** — Mac mini 2014 (`Macmini7,1`), **Intel i5-4278U 2c/4t**, **8GB RAM**, Intel Iris
+      (no real GPU/ML), **931GB disk (895GB free)**, macOS 12.7.6 Monterey. Reframe: it's a storage
+      + stable-x86-Chrome + sacrificial-24/7-worker tier, **not** a compute/ML beast (correcting the
+      earlier "Apple-silicon ML" assumption — it's Intel). All AI gen stays cloud.
+- [x] **Sleep killed** — owner ran `sudo pmset -a sleep 0 disablesleep 1 standby 0 powernap 0
+      womp 1 autorestart 1`. Was suspending SSH/TCP on idle (answered ping only); now holds.
+- [x] **Runtime decision = Colima** (Docker Desktop 4.78 needs macOS 14; this box maxes at
+      Monterey). Compose parity with the Pi; social publishing runs native macOS. Deny rule is
+      laptop-only — pi-node2 is a real Docker host. *(owner deferred the choice; CTO took the
+      recommended default.)*
+- **Tier split (final):** Pi-node1 = always-on DNS + observability + Wi-Fi/RF (radio-bound) +
+      sentinel/reporting. **pi-node2** = YouTube QoE 24/7 (v0.6 unparks here — x86 fixes the arm64
+      chromedriver drift), content-monetization platform, long-retention storage + backup target,
+      off-board dead-Pi watcher (the silent-dead-Pi gap).
+- [ ] **Next:** install Colima on pi-node2 → unpark v0.6 YouTube QoE here → then v0.7 phase 3
+      (Higgsfield content platform).
+
+**Side task — apps to GitHub (owner 2026-06-15):** push `cc_points_dashboard`, `stock_analysis`,
+`wifi_health_check_home_application` (and YouTube tests once built) each to its **own PRIVATE**
+GitHub repo. **NOT** the monetization project. Done 2026-06-15: secret-scanned (all clean), ignores
+hardened, local initial commits made (cc-points 40 files / stock-analysis 57 / wifi-health gitignore).
+Blocked on: owner creates 3 empty private repos (`cc-points-dashboard`, `stock-analysis`,
+`wifi-health-check`) → CTO adds remotes + pushes. (`gh` not installed locally.)
+
 ## Now (v0.5 — Wi-Fi health application, owner directive 2026-06-14)
 Owner (a Wi-Fi engineer): the house Wi-Fi (Verizon CR1000A router + extender) is bad on multiple
 devices. Build a **Wi-Fi health-check web app**, code in
