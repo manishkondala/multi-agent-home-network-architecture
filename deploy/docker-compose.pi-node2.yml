@@ -1,0 +1,39 @@
+# pi-fleet stack — pi-node2 (Mac mini 2014, Intel x86_64, macOS Monterey, Docker via Colima).
+# Separate compose file from the Pi's stack: different node, different arch, different
+# services. Deployed to ~/pi-fleet on pi-node2; images are built THERE under Colima
+# (never on the owner's Mac, never on the Pi). Secrets come from .env (never in git).
+#
+# pi-node1's Prometheus scrapes these services across the LAN — see deploy/prometheus
+# /prometheus.yml job `youtube-qoe` and the cross-node target note there.
+name: pi-fleet-node2
+
+services:
+  # Continuous YouTube QoE tester (roadmap v0.6). ONE long-lived worker looping over a
+  # curated video list, headless Chromium playback, Prometheus QoE metrics on :9621.
+  #
+  # HOST NETWORKING is REQUIRED: the worker's `ss -tin` TCP_INFO sampler must share the
+  # network namespace with Chromium to see the REAL googlevideo CDN sockets (a bridge
+  # would show NAT'd sockets), and pi-node1's Prometheus reaches :9621 directly on the
+  # LAN. Combined with Chromium's --disable-quic, media uses TCP so TCP_INFO is readable.
+  #
+  # NOTE: Docker `network_mode: host` on macOS/Colima binds to the COLIMA VM's network,
+  # not macOS directly. Verify at deploy that :9621 is reachable from pi-node1 and that
+  # `ss` inside the container sees the CDN sockets; if Colima's host-net is too isolated,
+  # the deploy-time fix is to run the worker in the Colima VM's netns (documented in the
+  # app README "ss / host-networking requirement").
+  youtube-qoe:
+    build: ../apps/test/video/youtube
+    image: youtube-qoe:0.1.0          # local image, built on pi-node2 under Colima
+    container_name: youtube-qoe
+    network_mode: host
+    environment:
+      TZ: ${TZ}
+      METRICS_PORT: "9621"
+      PLAY_SECONDS: "420"             # 7 min/video (within the 5-15 min window)
+      POLL_SECONDS: "1.0"
+    volumes:
+      # Bind-mount the curated list so it can be edited + `docker restart`ed without a rebuild.
+      - ../apps/test/video/youtube/videos.yml:/app/videos.yml:ro
+    restart: unless-stopped
+    # 8GB / 2-core box; headless Chromium + driver fit comfortably under 2G.
+    mem_limit: 2g

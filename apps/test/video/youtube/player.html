@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>yt-qoe</title>
+  <style>
+    html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+    /* A fixed 1280x720 stage gives the player a real viewport so it requests HD
+       ladders. The headless window is sized to match in the worker. */
+    #player { width: 1280px; height: 720px; }
+  </style>
+</head>
+<body>
+  <!-- The worker loads this page from a local file/HTTP origin, then calls
+       window.YTQOE.load(videoId). Embedding via the IFrame Player API avoids the
+       consent/cookie wall and the pre-roll ads of the watch page, and gives us
+       movie_player.getStatsForNerds() + the underlying <video> element. -->
+  <div id="player"></div>
+  <script>
+    // Collected, queryable state the worker reads via Selenium's execute_script.
+    window.YTQOE = {
+      ready: false,
+      player: null,
+      state: -100,          // YT.PlayerState; -100 = not initialised
+      error: null,          // numeric YT error code if onError fired
+      startedAt: null,      // ms epoch when PLAYING first seen
+      requestedAt: null,    // ms epoch when load() was called
+      firstFrameAt: null,   // ms epoch of first non-zero currentTime
+      load: function (videoId) {
+        this.error = null;
+        this.state = -100;
+        this.startedAt = null;
+        this.firstFrameAt = null;
+        this.requestedAt = Date.now();
+        if (this.player && this.player.loadVideoById) {
+          this.player.loadVideoById(videoId);
+        } else {
+          this._pendingId = videoId;
+        }
+      }
+    };
+
+    function onYouTubeIframeAPIReady() {
+      window.YTQOE.player = new YT.Player('player', {
+        width: 1280,
+        height: 720,
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1,
+          // origin guards against some embed checks; the worker serves this page
+          // from http://127.0.0.1 so the origin is stable.
+          origin: location.origin
+        },
+        events: {
+          onReady: function (e) {
+            window.YTQOE.ready = true;
+            try { e.target.mute(); } catch (err) {}   // headless: no audio device
+            try { e.target.setPlaybackQuality('hd1080'); } catch (err) {}
+            if (window.YTQOE._pendingId) {
+              e.target.loadVideoById(window.YTQOE._pendingId);
+              window.YTQOE._pendingId = null;
+            }
+          },
+          onStateChange: function (e) {
+            window.YTQOE.state = e.data;
+            if (e.data === YT.PlayerState.PLAYING && !window.YTQOE.startedAt) {
+              window.YTQOE.startedAt = Date.now();
+            }
+          },
+          onError: function (e) {
+            // 2 invalid id, 5 html5 error, 100 removed/private, 101/150 embed-disabled
+            window.YTQOE.error = e.data;
+          }
+        }
+      });
+    }
+
+    // getStatsForNerds() shape varies by player build; pull it defensively and
+    // also read the raw <video> element for fps/quality/buffer ground truth.
+    window.__ytqoeSample = function () {
+      var p = window.YTQOE.player;
+      var out = { state: window.YTQOE.state, error: window.YTQOE.error };
+      try {
+        if (p && p.getCurrentTime) {
+          var t = p.getCurrentTime();
+          out.current_time = t;
+          if (t > 0 && !window.YTQOE.firstFrameAt) {
+            window.YTQOE.firstFrameAt = Date.now();
+          }
+        }
+        if (p && p.getDuration) out.duration = p.getDuration();
+        if (p && p.getPlaybackQuality) out.playback_quality = p.getPlaybackQuality();
+        if (p && p.getVideoLoadedFraction) out.loaded_fraction = p.getVideoLoadedFraction();
+        if (p && p.getStatsForNerds) {
+          var s = p.getStatsForNerds();
+          out.sfn = s || {};
+        }
+      } catch (err) {
+        out.sample_error = String(err);
+      }
+      // Underlying media element: authoritative for size, fps, dropped frames.
+      try {
+        var v = document.querySelector('video');
+        if (v) {
+          out.video_width = v.videoWidth;
+          out.video_height = v.videoHeight;
+          out.buffered_end = (v.buffered && v.buffered.length)
+            ? v.buffered.end(v.buffered.length - 1) : null;
+          out.ready_state = v.readyState;   // 4 = HAVE_ENOUGH_DATA
+          if (v.getVideoPlaybackQuality) {
+            var q = v.getVideoPlaybackQuality();
+            out.dropped_frames = q.droppedVideoFrames;
+            out.total_frames = q.totalVideoFrames;
+          }
+        }
+      } catch (err2) {
+        out.video_error = String(err2);
+      }
+      out.requested_at = window.YTQOE.requestedAt;
+      out.started_at = window.YTQOE.startedAt;
+      out.first_frame_at = window.YTQOE.firstFrameAt;
+      return out;
+    };
+  </script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>

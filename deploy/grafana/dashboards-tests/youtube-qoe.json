@@ -1,0 +1,211 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "1 while the QoE worker loop is alive; and 1 if the last ss TCP_INFO capture succeeded.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } }, "type": "value" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 10,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "pluginVersion": "11.6.1",
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_up", "legendFormat": "worker", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_tcp_sampler_up", "legendFormat": "ss sampler", "refId": "B" }
+      ],
+      "title": "Health",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Initial load time per video: load() -> first PLAYING with currentTime>0.",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "s", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 3 }, { "color": "red", "value": 6 }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 11,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "pluginVersion": "11.6.1",
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "max(youtube_qoe_startup_seconds{video_id=~\"$video_id\"})", "legendFormat": "startup", "refId": "A" }
+      ],
+      "title": "Latest startup time",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Current decoded resolution height (px) of the playing video.",
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-GrYlRd" }, "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 480 }, { "color": "green", "value": 720 }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 12,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "pluginVersion": "11.6.1",
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "max(youtube_qoe_resolution_height{video_id=~\"$video_id\"})", "legendFormat": "height", "refId": "A" }
+      ],
+      "title": "Current resolution (px)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Fraction of sampled seconds spent buffering in the current session.",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "percentunit", "min": 0, "max": 1, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.02 }, { "color": "red", "value": 0.1 }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 13,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "pluginVersion": "11.6.1",
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "max(youtube_qoe_buffering_ratio{video_id=~\"$video_id\"})", "legendFormat": "ratio", "refId": "A" }
+      ],
+      "title": "Buffering ratio",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Resolution height over time, per video. Drops indicate the player downshifting under bandwidth/CPU pressure.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "stepAfter": true }, "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 1,
+      "options": { "legend": { "calcs": ["min", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_resolution_height{video_id=~\"$video_id\"}", "legendFormat": "{{video_id}} {{quality}}", "refId": "A" }
+      ],
+      "title": "Resolution over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Rebuffering events per minute (rate of the buffering_events counter) and the running buffering ratio.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 1, "showPoints": "never" }, "unit": "short" }, "overrides": [{ "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "unit", "value": "percentunit" }, { "id": "custom.axisPlacement", "value": "right" }] }] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 2,
+      "options": { "legend": { "calcs": ["sum", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (video_id) (rate(youtube_qoe_buffering_events_total{video_id=~\"$video_id\"}[$__rate_interval])) * 60", "legendFormat": "events/min {{video_id}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "max by (video_id) (youtube_qoe_buffering_ratio{video_id=~\"$video_id\"})", "legendFormat": "ratio {{video_id}}", "refId": "B" }
+      ],
+      "title": "Buffering events & ratio",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Startup (initial-load) time per video over the range.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "points", "pointSize": 6, "showPoints": "always", "lineWidth": 0 }, "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "id": 3,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_startup_seconds{video_id=~\"$video_id\"}", "legendFormat": "{{video_id}}", "refId": "A" }
+      ],
+      "title": "Startup time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Effective bitrate (video/audio/total) where the player exposes it via getStatsForNerds(). May be sparse on builds that only report total bandwidth.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" }, "unit": "bps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "id": 4,
+      "options": { "legend": { "calcs": ["mean"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_bitrate_total_bps{video_id=~\"$video_id\"}", "legendFormat": "total {{video_id}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_bitrate_video_bps{video_id=~\"$video_id\"}", "legendFormat": "video {{video_id}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_bitrate_audio_bps{video_id=~\"$video_id\"}", "legendFormat": "audio {{video_id}}", "refId": "C" }
+      ],
+      "title": "Effective bitrate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Reported FPS and dropped frames per minute. Dropped frames spike under CPU/decode pressure even when bandwidth is fine.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" }, "unit": "short" }, "overrides": [{ "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "custom.axisPlacement", "value": "right" }, { "id": "unit", "value": "/min" }] }] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "id": 5,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_fps{video_id=~\"$video_id\"}", "legendFormat": "fps {{video_id}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (video_id) (rate(youtube_qoe_dropped_frames_total{video_id=~\"$video_id\"}[$__rate_interval])) * 60", "legendFormat": "dropped/min {{video_id}}", "refId": "B" }
+      ],
+      "title": "FPS & dropped frames",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Session TCP_INFO to the googlevideo CDN (from ss -tin, QUIC disabled). SRTT and congestion window — the kernel's view of the media transport.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" }, "unit": "µs" }, "overrides": [{ "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "unit", "value": "short" }, { "id": "custom.axisPlacement", "value": "right" }] }] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "id": 6,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_tcp_srtt_us{video_id=~\"$video_id\"}", "legendFormat": "srtt µs {{video_id}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_tcp_cwnd{video_id=~\"$video_id\"}", "legendFormat": "cwnd {{video_id}}", "refId": "B" }
+      ],
+      "title": "CDN TCP: SRTT & cwnd",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "CDN delivery_rate (kernel-measured) and retransmits per minute. Retrans rising while delivery_rate falls = a lossy/congested path to the CDN.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" }, "unit": "bps" }, "overrides": [{ "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "unit", "value": "/min" }, { "id": "custom.axisPlacement", "value": "right" }] }] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
+      "id": 7,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_tcp_delivery_rate_bps{video_id=~\"$video_id\"}", "legendFormat": "delivery_rate {{video_id}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum by (video_id) (rate(youtube_qoe_tcp_retrans_total{video_id=~\"$video_id\"}[$__rate_interval])) * 60", "legendFormat": "retrans/min {{video_id}}", "refId": "B" }
+      ],
+      "title": "CDN TCP: delivery rate & retransmits",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["pi-fleet", "tests", "youtube", "qoe"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": ["All"], "value": ["$__all"] },
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "definition": "label_values(youtube_qoe_video_playing, video_id)",
+        "includeAll": true,
+        "label": "Video",
+        "multi": true,
+        "name": "video_id",
+        "options": [],
+        "query": { "query": "label_values(youtube_qoe_video_playing, video_id)", "refId": "A" },
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "YouTube Metrics",
+  "uid": "tests",
+  "version": 1,
+  "weekStart": ""
+}

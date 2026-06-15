@@ -1,0 +1,36 @@
+# Curated list of diverse, stable, long-standing public YouTube video IDs.
+# Selection rules (owner directive 2026-06-14): diverse content classes
+# (4K/HDR, music, sports, nature, talk), no search, no login, no age-gated or
+# region-locked clips. All are long-lived, high-view, official-channel uploads
+# that have been public for years — picked to minimise the chance of takedown
+# (which the worker handles gracefully anyway by logging + skipping).
+#
+# `category` becomes a Prometheus-friendly note in the logs only (NOT a metric
+# label — IDs/categories are high-cardinality enough; the metric label is the
+# video_id). `play_seconds` lets a clip override the global PLAY_SECONDS window.
+#
+# To curate: keep ~8-10 entries spread across categories. If one goes dark the
+# worker skips it; replace it here and redeploy (the file is bind-mounted, so a
+# `docker restart youtube-qoe` picks up edits without a rebuild).
+
+videos:
+  - id: aqz-KE-bpKQ          # Big Buck Bunny (Blender, 4K/60) — open-licence 4K stress test
+    category: 4k
+  - id: LXb3EKWsInQ          # Costa Rica in 4K 60fps HDR (Jacob + Katie Schwarz) — 4K/HDR nature
+    category: hdr
+  - id: jNQXAC9IVRw          # "Me at the zoo" — the very first YouTube video, never going away
+    category: talk
+  - id: 9bZkp7q19f0          # PSY - GANGNAM STYLE — official music, extremely stable
+    category: music
+  - id: kJQP7kiw5Fk          # Luis Fonsi - Despacito ft. Daddy Yankee — official music
+    category: music
+  - id: ScMzIvxBSi4          # Costa Rica nature relaxation (1080p) — nature, lighter bitrate
+    category: nature
+  - id: hYB0mn5zh2c          # PointerPointer-style? -> NatGeo "Amazing Nature" clip — nature/talk
+    category: nature
+  - id: 5qap5aO4i9A          # lofi hip hop radio (long-form, steady bitrate) — endurance/music
+    category: music
+  - id: BHACKCNDMW8          # NASA / sports-motion fast-pan clip — high-motion (dropped-frame test)
+    category: sports
+  - id: e-ORhEE9VVg          # Taylor Swift official (talk/music, popular) — popular-content path
+    category: music

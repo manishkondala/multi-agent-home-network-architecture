@@ -9,3 +9,16 @@ providers:
     allowUiUpdates: true
     options:
       path: /var/lib/grafana/dashboards
+
+  # Roadmap v0.6: a dedicated "tests" folder for continuous test dashboards
+  # (YouTube QoE first). Mounted from a SEPARATE host dir (grafana/dashboards-tests)
+  # rather than a subdir of the pi-fleet path — the pi-fleet provider scans its path
+  # recursively, so a subdir would double-load these JSONs (duplicate-uid collision).
+  - name: tests
+    folder: tests
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 60
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards-tests

@@ -25,6 +25,14 @@
         container: wifi-health
         # Host-networked (no container DNS) — probe via the Pi's LAN IP, not a fleet hostname.
         siteMonitor: http://{{HOMEPAGE_VAR_HOST}}:3005/api/health
+    - YouTube Metrics:
+        icon: mdi-youtube
+        # Locked: links straight into the Grafana "YouTube Metrics" dashboard (folder
+        # pi-fleet/tests, uid `tests`), which is gated behind the Grafana login — only the
+        # owner has the password (same gating as the v0.5 admin view / streaming dashboard).
+        # Worker runs on pi-node2; metrics are scraped cross-node into pi-node1 Grafana.
+        href: "http://{{HOMEPAGE_VAR_HOST}}:3000/d/tests/youtube-metrics"
+        description: Continuous YouTube QoE tests (Grafana login required)
     - Pi-hole:
         icon: pi-hole.svg
         href: "http://{{HOMEPAGE_VAR_HOST}}:8081/admin"

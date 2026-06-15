@@ -180,7 +180,20 @@ in the test container's netns keyed to the googlevideo CDN peers. (5) Lock = Gra
 (already admin-gated) is the cheap path; an in-app locked view reuses the v0.5 admin-password
 pattern.
 
-**Status 2026-06-14: PARKED by the owner — "park everything now, we will pick this up later."**
+**Status 2026-06-15: UNPARKED — code built (CODE-ONLY, not yet deployed).** Target moved off the
+Pi 4 onto **pi-node2** (Intel Mac mini), which fixes the arm64 chromedriver-drift pain and removes
+the DNS-stability tradeoff. Built on branch `feat/youtube-qoe-tester` under
+`apps/test/video/youtube/` + the deploy wiring; deployment waits on Colima being installed on
+pi-node2 (v0.7 phase 1). Files: `apps/test/video/youtube/{worker.py,metrics.py,tcpinfo.py,
+player.html,videos.yml,Dockerfile,requirements.txt,README.md}`; `deploy/docker-compose.pi-node2.yml`
+(`youtube-qoe`, host-net, mem 2g); Prometheus job `youtube-qoe` (cross-node, DHCP placeholder
+`pi-node2.PLACEHOLDER:9621` for infra to fill); Grafana folder `tests` + dashboard "YouTube
+Metrics" (uid `tests`); Homepage Network tile "YouTube Metrics" (locked behind Grafana login);
+port 9621 claimed in ARCHITECTURE.md. **ss/host-net + --disable-quic** documented as the TCP_INFO
+requirement; the one deploy-time unknown is whether Colima's host-net lets `ss` see the real CDN
+sockets (README "ss / host-networking requirement").
+
+**Earlier (2026-06-14): PARKED by the owner — "park everything now, we will pick this up later."**
 Scoped but not built (DNS-stability tradeoff of running headless Chromium nonstop on the Pi 4).
 - **`vsc` read (2023 Selenium tester at `/home/pi/vsc`, do NOT touch):** `controller.py` loops
   forever spawning `main.py` (one Chrome session/run, ~30 min, killed on timeout). Metrics it

@@ -89,6 +89,18 @@ scrape_configs:
       - targets: ["host.docker.internal:9620"]
         labels: { node: pi-node1 }
 
+  # YouTube QoE tester (roadmap v0.6) runs on pi-node2 (Mac mini), host-networked on
+  # :9621, scraped CROSS-NODE over the LAN. pi-node2's IP is DHCP — DO NOT hardcode it.
+  # PLACEHOLDER for infra to fill at deploy: replace `pi-node2.PLACEHOLDER:9621` with the
+  # Tailscale MagicDNS name (e.g. pi-node2.<tailnet>.ts.net:9621) once the tailnet is up,
+  # or add a DHCP reservation + LAN hostname for pi-node2 and use that. Until then this
+  # target is intentionally unresolvable (the job shows down, which is correct pre-deploy).
+  # See docs/ARCHITECTURE.md port registry + the app README deploy steps.
+  - job_name: youtube-qoe
+    static_configs:
+      - targets: ["pi-node2.PLACEHOLDER:9621"]
+        labels: { node: pi-node2 }
+
   - job_name: loki
     static_configs:
       - targets: ["loki:3100"]

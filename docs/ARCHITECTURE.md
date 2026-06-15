@@ -57,6 +57,11 @@ for the Mac Mini when it joins.
 | 3004 | stock-backend | owner app, FastAPI/uvicorn, container :8765 |
 | (internal) 9100/8080/9617/9080/9115 | exporters/promtail/blackbox | fleet network only, not published |
 
+### Port registry (pi-node2 — Mac mini, Docker via Colima)
+| Port | Owner | Notes |
+|------|-------|-------|
+| 9621 | youtube-qoe | YouTube QoE tester `/metrics` (host-net); scraped cross-node by pi-node1 Prometheus (job `youtube-qoe`) |
+
 ## Design rules
 1. Everything is Docker Compose under `deploy/`, one shared `fleet` network; new apps join it.
 2. Images must be linux/arm64; pinned versions, not `latest`.
