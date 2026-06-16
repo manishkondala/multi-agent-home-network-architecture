@@ -1,0 +1,50 @@
+# pi-fleet — YouTube QoE tester (roadmap v0.6). NODE-PORTABLE compose file.
+#
+# This stack runs on WHATEVER node hosts the tester:
+#   * TODAY  (2026-06-15): pi-node1 (Pi 4B, arm64) — capped so it can't starve Pi-hole DNS.
+#   * SOON   (pi-node3 lands): move this file there verbatim; only the Prometheus scrape
+#            target (deploy/prometheus/prometheus.yml job `youtube-qoe`) changes to point
+#            at pi-node3's reachable name instead of localhost.
+#
+# Kept as a SEPARATE compose file (not folded into docker-compose.yml) precisely so the
+# port to pi-node3 is a clean lift-and-shift: `docker compose -f docker-compose.youtube-qoe.yml`
+# up/down on the target node, independent of pi-node1's core DNS/observability stack.
+#
+# Built ON the host node (arm64 on the Pi) — never on the owner's Mac. Debian's `chromium`
+# + `chromium-driver` packages are per-arch, so the same Dockerfile builds on arm64 and
+# x86_64. Image + build context are shipped to the node by scripts/sync-youtube-qoe.sh.
+name: pi-fleet-youtube-qoe
+
+services:
+  # Continuous YouTube QoE tester. ONE long-lived worker looping over a curated video
+  # list, headless Chromium playback, Prometheus QoE metrics on :9621.
+  #
+  # HOST NETWORKING is REQUIRED: the worker's `ss -tin` TCP_INFO sampler must share the
+  # network namespace with Chromium to see the REAL googlevideo CDN sockets (a bridge
+  # would show NAT'd sockets), and the node-local Prometheus reaches :9621 directly.
+  # Combined with Chromium's --disable-quic, media uses TCP so TCP_INFO is readable.
+  #
+  # On Linux (the Pi) host networking is native, so `ss` inside the container sees the
+  # host's sockets directly — no Colima VM indirection. This is the upside of the Pi.
+  youtube-qoe:
+    build: ../apps/test/video/youtube      # context shipped to ~/apps/test/video/youtube on the node
+    image: youtube-qoe:0.1.0               # local image, built ON the node (arm64 on the Pi)
+    container_name: youtube-qoe
+    network_mode: host
+    environment:
+      TZ: ${TZ}
+      METRICS_PORT: "9621"
+      PLAY_SECONDS: "420"                  # 7 min/video (within the 5-15 min window)
+      POLL_SECONDS: "1.0"
+    volumes:
+      # Bind-mount the curated list so it can be edited + `docker restart`ed without a rebuild.
+      - ../apps/test/video/youtube/videos.yml:/app/videos.yml:ro
+    restart: unless-stopped
+    # ---- RESOURCE CAPS (critical on the shared Pi: must NOT starve Pi-hole DNS) ----
+    # mem_limit 1g: headless Chromium + driver + Python fit under 1G with the single
+    # long-lived worker; the Pi has ~6GB free so this leaves ample headroom for DNS etc.
+    mem_limit: 1g
+    # cpus 1.5: cap so headless Chromium decode can't peg all 4 cores. Pi-hole's DNS
+    # path stays responsive on the remaining ~2.5 cores. (Compose translates this to
+    # cgroup cpu quota; works without swarm mode.)
+    cpus: 1.5

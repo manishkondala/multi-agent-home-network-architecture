@@ -180,18 +180,41 @@ in the test container's netns keyed to the googlevideo CDN peers. (5) Lock = Gra
 (already admin-gated) is the cheap path; an in-app locked view reuses the v0.5 admin-password
 pattern.
 
-**Status 2026-06-15: UNPARKED — code built (CODE-ONLY, not yet deployed).** Target moved off the
-Pi 4 onto **pi-node2** (Intel Mac mini), which fixes the arm64 chromedriver-drift pain and removes
-the DNS-stability tradeoff. Built on branch `feat/youtube-qoe-tester` under
-`apps/test/video/youtube/` + the deploy wiring; deployment waits on Colima being installed on
-pi-node2 (v0.7 phase 1). Files: `apps/test/video/youtube/{worker.py,metrics.py,tcpinfo.py,
-player.html,videos.yml,Dockerfile,requirements.txt,README.md}`; `deploy/docker-compose.pi-node2.yml`
-(`youtube-qoe`, host-net, mem 2g); Prometheus job `youtube-qoe` (cross-node, DHCP placeholder
-`pi-node2.PLACEHOLDER:9621` for infra to fill); Grafana folder `tests` + dashboard "YouTube
-Metrics" (uid `tests`); Homepage Network tile "YouTube Metrics" (locked behind Grafana login);
-port 9621 claimed in ARCHITECTURE.md. **ss/host-net + --disable-quic** documented as the TCP_INFO
-requirement; the one deploy-time unknown is whether Colima's host-net lets `ss` see the real CDN
-sockets (README "ss / host-networking requirement").
+**Status 2026-06-15: DEPLOYED + RUNNING (CAPPED) on pi-node1 — data collection started today.**
+Owner directive (2026-06-15): deploy on the Pi TODAY, lightweight/capped, and keep the compose
+**node-portable** because it is **ported to a dedicated `pi-node3` tomorrow**. Done:
+- Compose renamed `deploy/docker-compose.pi-node2.yml` → **`deploy/docker-compose.youtube-qoe.yml`**
+  (node-portable: runs on whatever node hosts it). **Resource caps** to protect Pi-hole DNS:
+  `cpus: 1.5` (ENFORCED — verified `NanoCpus=1.5e9`, container pinned at ~150% CPU) and
+  `mem_limit: 1g` (down from 2g). **Caveat:** this Pi's kernel has **no `memory` cgroup controller**
+  (`/sys/fs/cgroup/cgroup.controllers` = `cpuset cpu io pids`), so `mem_limit` is silently
+  DISCARDED for *every* container here (wifi-health etc. too) — Docker warns "kernel does not
+  support memory limit … Limitation discarded". The CPU cap (the real DNS-starvation lever)
+  holds; memory cap needs `cgroup_enable=memory` in `/boot/cmdline.txt` + a reboot (owner-impacting,
+  deferred — pi-node3 should boot with it). Actual Chromium footprint is small; no OOM risk at
+  ~6 GB free.
+- Built **ON pi-node1 (arm64)** via git-archive-over-ssh + `scripts/sync-youtube-qoe.sh`
+  (mirrors `sync-apps.sh`; ships `apps/test/video/youtube` → `~/apps/test/video/youtube`, builds
+  the compose stack on the node). Debian `chromium`+`chromium-driver` build cleanly on arm64.
+- Prometheus job `youtube-qoe` target → **`host.docker.internal:9621`** (same node as Prometheus,
+  host-networked, via the existing host-gateway like wifi-health), label `node: pi-node1`. Comment
+  flags the one-line change to pi-node3's reachable name on port day.
+- **Bug fixed during deploy** (`tcpinfo.py`): Google's media CDN reverse-DNS resolves to
+  **`*.1e100.net`**, not `*.googlevideo.com`, so `tcp_sockets` read 0 until `.1e100.net` was added
+  to `_CDN_SUFFIXES`. After the fix the TCP_INFO series populate (sockets=10, SRTT ~8 ms,
+  delivery_rate ~18 Mbps).
+- **Verified:** container up, 0 restarts; `youtube_qoe_up=1`, first video playing
+  (`plays_total{ok}`, startup 2.7 s); Prometheus target **up**; `ss` inside the container lists the
+  googlevideo (`*.1e100.net`) CDN sockets over IPv6 → TCP_INFO captured; **DNS healthy** (3–11 ms
+  query time) and load sane under the cap.
+
+**To port to pi-node3 (tomorrow):** `HOST=pi-node3 scripts/sync-youtube-qoe.sh` after `deploy/`
+lands there, then flip the Prometheus `youtube-qoe` target + `node` label to pi-node3's name
+(Tailscale MagicDNS or DHCP-reserved hostname — never a raw IP) and stop the pi-node1 copy.
+
+**Earlier (2026-06-15, superseded same day): code-built, planned for pi-node2 (Mac mini) under
+Colima.** That target (and the Colima host-net `ss` unknown) is moot — the owner chose a dedicated
+pi-node3 instead; the app proved it works natively on arm64 + Linux host-net on pi-node1.
 
 **Earlier (2026-06-14): PARKED by the owner — "park everything now, we will pick this up later."**
 Scoped but not built (DNS-stability tradeoff of running headless Chromium nonstop on the Pi 4).

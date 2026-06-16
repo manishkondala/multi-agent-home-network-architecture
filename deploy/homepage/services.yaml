@@ -30,7 +30,7 @@
         # Locked: links straight into the Grafana "YouTube Metrics" dashboard (folder
         # pi-fleet/tests, uid `tests`), which is gated behind the Grafana login — only the
         # owner has the password (same gating as the v0.5 admin view / streaming dashboard).
-        # Worker runs on pi-node2; metrics are scraped cross-node into pi-node1 Grafana.
+        # Worker runs CAPPED on pi-node1 today (moves to pi-node3 when it lands).
         href: "http://{{HOMEPAGE_VAR_HOST}}:3000/d/tests/youtube-metrics"
         description: Continuous YouTube QoE tests (Grafana login required)
     - Pi-hole:
