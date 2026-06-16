@@ -3,6 +3,33 @@
 Running log of things we learned the hard way (or just learned). Newest first.
 `coach` appends here after reviews; everyone appends when they hit something non-obvious.
 
+## 2026-06-15 (near-miss: almost wrote a root-less kernel cmdline on the DNS Pi)
+- **Goal:** enable the `memory` cgroup controller on pi-node1 (off by default → `docker stats`
+  shows `0B` mem **and** `mem_limit` is silently unenforced fleet-wide) by appending
+  `cgroup_enable=memory cgroup_memory=1` to the kernel cmdline.
+- **What bit us:** this Debian-on-Pi image **boots from an EMPTY `/boot/cmdline.txt`** — the
+  Pi firmware supplies the defaults (`root=/dev/mmcblk0p2 rootfstype=ext4 rootwait`, seen in
+  `/proc/cmdline`). Blindly appending to the empty file produced a cmdline containing **only**
+  the cgroup flags and **no `root=`**. A reboot then could have left the kernel with no root
+  device → **panic, no boot, recover only by physically pulling the SD card** — on the box that
+  serves the whole house's DNS. Also: `/boot` is mounted **read-only** (`ro,errors=remount-ro`,
+  SD longevity) so edits need `sudo mount -o remount,rw /boot` first (and `cp -n` of an empty
+  original makes a useless 0-byte "backup").
+- **Caught by:** checking `/proc/cmdline` (the *actual* running args) and the 0-byte backup
+  **before** rebooting — never reboot a remote prod node right after touching its boot config
+  without confirming the new cmdline is complete.
+- **Rules (binding):**
+  1. **Never blind-append to `cmdline.txt`.** Diff against `/proc/cmdline`; the new file MUST
+     contain a valid `root=` (here `root=/dev/mmcblk0p2 rootfstype=ext4 rootwait`). If the file
+     was empty (firmware-default boot), write the *complete* standard line, don't append.
+  2. **No reboot of the DNS Pi for a nice-to-have.** Verify before reboot; have a written SD-card
+     recovery path ready; prefer doing risky boot changes on a node that isn't load-bearing.
+  3. **`/boot` is `ro`** → remount rw to edit, restore ro after, `sync` before reboot.
+- **Resolution:** reverted `cmdline.txt` to empty (box safe, never rebooted). Owner decision:
+  **defer** — enable `cgroup_enable=memory` on **pi-node3** (new Pi, arrives 2026-06-16) from its
+  first boot (zero risk), and migrate the YouTube container there. pi-node1 keeps the enforced
+  **CPU** cap (the real DNS-starvation lever) meanwhile.
+
 ## 2026-06-14 (self-inflicted merge conflict: edited docs before branching off main)
 - **What happened:** starting the v0.5 Wi-Fi work, the CTO began editing a *tracked* file
   (`docs/ROADMAP.md`) and persisting the directive **while still on an unmerged feature
