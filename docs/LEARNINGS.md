@@ -314,3 +314,23 @@ Reviewed both watchdog reports, git log, and three incidents. Findings → instr
   all Prometheus targets *and* exporter self-health gauges (`*_up`), not just container status.
   `streaming` target read `up` (its /metrics served fine) while `pihole_streaming_exporter_up`
   was 0 — container-level and target-level checks both missed it.
+
+## 2026-06-16 (YouTube QoE: three "story" charts; resolution/fps/dropped metrics are dead)
+- **Dashboard:** added three main time-series at the top of the `tests` dashboard (uid `tests`) —
+  Initial buffering (`avg(avg_over_time(youtube_qoe_startup_seconds[$bucket]))`), Total buffering
+  per video (`sum(increase(youtube_qoe_buffering_seconds_total[$bucket])) /
+  clamp_min(sum(increase(youtube_qoe_plays_total[$bucket])),1)`), and Avg resolution
+  (`avg(avg_over_time(youtube_qoe_resolution_height[$bucket]))`). All collapse cross-video into
+  one normalized line; bucket is an **interval template var** (`5m`/`15m`) driving both the panel
+  `interval` (min step) and the `[$bucket]` range, so each point = one aggregated window.
+- **GOTCHA found while verifying: `youtube_qoe_resolution_height`, `_fps`, and
+  `_dropped_frames_total` have ZERO series — they have never populated.** All three come from
+  `player.html` reading the underlying `<video>` DOM element (`document.querySelector('video')`
+  -> `videoHeight`/`getVideoPlaybackQuality()`). The YouTube IFrame player nests its `<video>` in
+  a **cross-origin iframe**, so the parent page's `querySelector('video')` returns null and the
+  whole block silently yields nothing. `youtube_qoe_playback_quality` (from the player API
+  `getPlaybackQuality()`/`getStatsForNerds()`) *does* populate — proof the iframe API is fine and
+  only the DOM-element scrape is broken. Fix path: source resolution/fps from the player API
+  (`getStatsForNerds()` exposes `resolution`/`optimal_res`; `getPlaybackQuality()` maps to a
+  height) instead of the inaccessible `<video>` element. Until then the Avg-resolution chart and
+  the pre-existing Resolution/FPS panels stay empty.
