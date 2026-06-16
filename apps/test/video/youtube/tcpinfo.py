@@ -32,7 +32,12 @@ import time
 _RATE_RE = re.compile(r"([\d.]+)([KMG]?)bps")
 _RATE_MULT = {"": 1.0, "K": 1e3, "M": 1e6, "G": 1e9}
 
-_CDN_SUFFIXES = (".googlevideo.com",)
+# Google's media CDN PTR records resolve to *.1e100.net (their canonical serving-infra
+# reverse-DNS domain), NOT *.googlevideo.com — googlevideo.com is the forward/SNI name but
+# the reverse lookup `gethostbyaddr` returns 1e100.net. Match both: 1e100.net catches the
+# real media sockets (verified on pi-node1 2026-06-15: CDN peers rDNS -> *.1e100.net), and
+# googlevideo.com is kept in case a peer ever reverses to it directly.
+_CDN_SUFFIXES = (".googlevideo.com", ".1e100.net")
 
 
 def _to_bps(num: str, unit: str) -> float:

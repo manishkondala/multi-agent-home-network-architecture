@@ -1,5 +1,7 @@
-# YouTube QoE tester — runs on pi-node2 (Mac mini 2014, Intel x86_64) under Colima.
-# Built ON pi-node2 via Colima's Docker (never on the owner's Mac, never on the Pi).
+# YouTube QoE tester — NODE-PORTABLE. Built ON whatever node hosts it:
+#   * today  : pi-node1 (Pi 4B, arm64) via the node's own Docker.
+#   * tomorrow: pi-node3 (when it lands) — same Dockerfile, no edits.
+# Never built on the owner's Mac (standing order #5).
 #
 # KEY FIX vs the old `vsc` tester: install `chromium` AND `chromium-driver` from the
 # SAME Debian apt repo in one `apt-get install`, so the browser and the driver always
@@ -7,7 +9,8 @@
 # on every Chrome update (version drift). Debian's packages are co-released.
 #
 # `iproute2` provides `ss` for TCP_INFO sampling of the googlevideo CDN sockets.
-# linux/amd64 base (pi-node2 is Intel) — Debian ships chromium for amd64.
+# Debian ships chromium + chromium-driver for BOTH arm64 and amd64, so this base is
+# arch-agnostic — Docker builds the matching arch on the host node.
 FROM python:3.12-slim-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive \
