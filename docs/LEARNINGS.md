@@ -334,3 +334,18 @@ Reviewed both watchdog reports, git log, and three incidents. Findings → instr
   (`getStatsForNerds()` exposes `resolution`/`optimal_res`; `getPlaybackQuality()` maps to a
   height) instead of the inaccessible `<video>` element. Until then the Avg-resolution chart and
   the pre-existing Resolution/FPS panels stay empty.
+- **FIXED (same day, commit `b55588f`):** the cleanest recovery wasn't the player API but the real
+  `<video>` element — **Selenium can switch INTO a cross-origin iframe** (`driver.switch_to.frame
+  (find_element(By.ID,"player"))`) because WebDriver operates per browsing-context and is *not*
+  bound by page same-origin policy. `worker.read_video_el()` reads `videoHeight` (quality-label
+  fallback) + `getVideoPlaybackQuality()` dropped/total frames there; fps is derived from the
+  total-frame delta between polls (dropped on counter reset + clamped to 121 fps so a mid-session
+  quality re-baseline can't emit a spike). Verified live: resolution 480/720, fps ~35, dropped 293,
+  and `avg(avg_over_time(youtube_qoe_resolution_height[5m]))` = 600. `getStatsForNerds()`/bitrate
+  is still unavailable (not exposed on the IFrame API proxy) — left documented in `parse_bitrates`.
+- **GOTCHA: `scripts/sync-youtube-qoe.sh` shipped without the executable bit** (`644`), so
+  `./scripts/sync-youtube-qoe.sh` dies with `permission denied` and — if chained after `>log 2>&1;
+  echo exit=$?` — the wrapper's exit code masks it as success while the rebuild never ran (the old
+  container kept serving). Run `bash scripts/sync-youtube-qoe.sh` or fix the mode (`chmod +x`,
+  committed). Always confirm the container actually recreated (`docker ps` shows a fresh `Up Ns`),
+  not just a zero exit code.
