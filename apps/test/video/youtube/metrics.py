@@ -73,14 +73,6 @@ class Metrics:
             ["video_id", "quality"],
         )
 
-        # ---- bitrate ----
-        self.bitrate_video = Gauge(
-            "youtube_qoe_bitrate_video_bps", "Video bitrate (bits/s)", ["video_id", "quality"])
-        self.bitrate_audio = Gauge(
-            "youtube_qoe_bitrate_audio_bps", "Audio bitrate (bits/s)", ["video_id", "quality"])
-        self.bitrate_total = Gauge(
-            "youtube_qoe_bitrate_total_bps", "Total bitrate (bits/s)", ["video_id", "quality"])
-
         # ---- TCP_INFO (googlevideo CDN sockets, via ss -tin) ----
         self.tcp_srtt_us = Gauge(
             "youtube_qoe_tcp_srtt_us", "Smoothed RTT to the CDN (microseconds)", ["video_id"])

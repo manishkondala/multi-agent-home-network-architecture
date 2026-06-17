@@ -108,42 +108,6 @@ def build_driver():
     return webdriver.Chrome(service=service, options=opts)
 
 
-def parse_bitrates(sample):
-    """Best-effort bitrate extraction. getStatsForNerds() field names drift across
-    player builds; try the common ones, fall back to bandwidth_kbps, else None.
-    NB: the IFrame API does not expose getStatsForNerds(), so `sfn` is currently
-    never populated and this returns (None, None, None) — bitrate stays unmeasured
-    until a same-origin/CDP path to the player stats is added."""
-    sfn = sample.get("sfn") or {}
-    video = audio = total = None
-
-    # Some builds expose explicit codec/bitrate strings; many only give bandwidth.
-    bw = sfn.get("bandwidth_kbps") or sfn.get("bandwidth")
-    try:
-        if bw is not None:
-            total = float(str(bw).split()[0]) * 1000.0   # kbps -> bps
-    except (ValueError, IndexError):
-        total = None
-
-    # "optimal_format"/"current" sometimes carry "1280x720@30 / avc1..." — not a bitrate.
-    # If the build exposes vfmt/afmt with bitrate we'd parse here; absent, leave None.
-    for key in ("video_bitrate", "vbr"):
-        if key in sfn:
-            try:
-                video = float(sfn[key])
-            except (TypeError, ValueError):
-                pass
-    for key in ("audio_bitrate", "abr"):
-        if key in sfn:
-            try:
-                audio = float(sfn[key])
-            except (TypeError, ValueError):
-                pass
-    if total is None and video is not None and audio is not None:
-        total = video + audio
-    return video, audio, total
-
-
 # The YouTube IFrame API replaces <div id="player"> with an <iframe id="player">
 # whose document is cross-origin to our page — unreachable from player.html's JS.
 # Selenium operates per browsing-context, so switching INTO the frame lets us read
@@ -286,15 +250,6 @@ def play_one(driver, page_url, video, metrics, sampler):
         if dropped is not None:
             metrics.add_dropped(vid, int(dropped))
 
-        # ---- bitrate ----
-        vbr, abr, tbr = parse_bitrates(s)
-        if vbr is not None:
-            metrics.bitrate_video.labels(vid, quality).set(vbr)
-        if abr is not None:
-            metrics.bitrate_audio.labels(vid, quality).set(abr)
-        if tbr is not None:
-            metrics.bitrate_total.labels(vid, quality).set(tbr)
-
         # ---- buffering ratio (running) ----
         if total_samples:
             metrics.buffering_ratio.labels(vid, quality).set(buffering_samples / total_samples)
@@ -312,7 +267,6 @@ def clear_live_gauges(metrics):
     """Between videos, clear the per-(video,quality) live gauges so only the
     currently-playing video holds live series. *_total counters persist."""
     for g in (metrics.resolution_height, metrics.fps, metrics.playback_quality,
-              metrics.bitrate_video, metrics.bitrate_audio, metrics.bitrate_total,
               metrics.buffering_ratio, metrics.startup_seconds,
               metrics.tcp_srtt_us, metrics.tcp_cwnd, metrics.tcp_delivery_rate,
               metrics.tcp_sockets):

@@ -2,7 +2,7 @@
 
 A single long-lived container that plays a curated list of public YouTube videos
 headlessly, 24/7, and exports **video Quality-of-Experience metrics** (buffering,
-resolution, bitrate, dropped frames, startup time) plus the **session TCP_INFO**
+resolution, dropped frames, startup time) plus the **session TCP_INFO**
 to Google's video CDN, as Prometheus series. pi-node1's Prometheus scrapes it
 cross-node; Grafana (folder `pi-fleet/tests`) and the Homepage "YouTube Metrics"
 tile visualise it.
@@ -17,12 +17,16 @@ repo** so the browser and driver are always version-matched.
 
 1. `worker.py` serves `player.html` on `127.0.0.1:8731` (a tiny page that embeds
    YouTube via the **IFrame Player API**). Embedding dodges the consent/cookie wall
-   and pre-roll ads of the watch page and exposes `movie_player.getStatsForNerds()`
-   plus the underlying `<video>` element.
+   and pre-roll ads of the watch page. State/time/quality come from the IFrame API
+   (postMessage) on the page; the real `<video>` element lives in a cross-origin
+   iframe, so the worker reads it by switching Selenium **into** that frame.
+   (`getStatsForNerds()` is **not** exposed on the IFrame API proxy — so bitrate is
+   not measurable via this embed and is intentionally not collected.)
 2. It loops over `videos.yml` forever. For each video: load it, play 5–15 min
-   (default 7), and **poll once per second** via `window.__ytqoeSample()`:
-   resolution height, fps, dropped frames, playback quality, buffering state,
-   startup time, and whatever bitrate the player build exposes.
+   (default 7), and **poll once per second**: resolution height, dropped frames,
+   playback quality, buffering state, startup time (via `window.__ytqoeSample()`
+   on the page) plus the in-iframe `<video>` read. fps is derived from the
+   decoded-frame-count delta between polls.
 3. Chromium runs `--headless=new` with **`--disable-quic`**, forcing media onto
    TCP. A background thread (`tcpinfo.py`) runs `ss -tinHO` once per second and
    keeps the busiest **`*.googlevideo.com`** socket's TCP_INFO: SRTT, cwnd,
@@ -48,7 +52,6 @@ Labels: `{video_id, quality}` on per-playback gauges; `{video_id}` on TCP series
 | `youtube_qoe_fps` | gauge | reported frames per second |
 | `youtube_qoe_dropped_frames_total{video_id}` | counter | dropped video frames |
 | `youtube_qoe_playback_quality` | gauge | quality as an ordinal (144…4320) |
-| `youtube_qoe_bitrate_video_bps` / `_audio_bps` / `_total_bps` | gauge | effective bitrate |
 | `youtube_qoe_tcp_srtt_us{video_id}` | gauge | SRTT to the CDN (µs) |
 | `youtube_qoe_tcp_cwnd{video_id}` | gauge | congestion window (segments) |
 | `youtube_qoe_tcp_retrans_total{video_id}` | counter | retransmits to the CDN |

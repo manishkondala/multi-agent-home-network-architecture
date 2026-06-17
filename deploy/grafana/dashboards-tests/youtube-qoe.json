@@ -158,28 +158,13 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "description": "Startup (initial-load) time per video over the range.",
       "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "points", "pointSize": 6, "showPoints": "always", "lineWidth": 0 }, "unit": "s" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 21 },
       "id": 3,
       "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
         { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_startup_seconds{video_id=~\"$video_id\"}", "legendFormat": "{{video_id}}", "refId": "A" }
       ],
       "title": "Startup time",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Effective bitrate (video/audio/total) where the player exposes it via getStatsForNerds(). May be sparse on builds that only report total bandwidth.",
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" }, "unit": "bps" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 21 },
-      "id": 4,
-      "options": { "legend": { "calcs": ["mean"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_bitrate_total_bps{video_id=~\"$video_id\"}", "legendFormat": "total {{video_id}}", "refId": "A" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_bitrate_video_bps{video_id=~\"$video_id\"}", "legendFormat": "video {{video_id}}", "refId": "B" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "youtube_qoe_bitrate_audio_bps{video_id=~\"$video_id\"}", "legendFormat": "audio {{video_id}}", "refId": "C" }
-      ],
-      "title": "Effective bitrate",
       "type": "timeseries"
     },
     {

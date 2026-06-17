@@ -14,8 +14,9 @@
 <body>
   <!-- The worker loads this page from a local file/HTTP origin, then calls
        window.YTQOE.load(videoId). Embedding via the IFrame Player API avoids the
-       consent/cookie wall and the pre-roll ads of the watch page, and gives us
-       movie_player.getStatsForNerds() + the underlying <video> element. -->
+       consent/cookie wall and the pre-roll ads of the watch page. The <video>
+       element lives in YouTube's cross-origin embed iframe; the worker reads it
+       by switching Selenium into that frame (see worker.read_video_el). -->
   <div id="player"></div>
   <script>
     // Collected, queryable state the worker reads via Selenium's execute_script.
