@@ -6,10 +6,12 @@ Design (roadmap v0.6):
   * Single long-lived worker, NOT container spawn/teardown (lighter than the old
     `vsc` controller that respawned Chrome per run).
   * Play via the YouTube IFrame Player API on a tiny local page (player.html),
-    which dodges the consent/cookie wall and pre-roll ads of the watch page and
-    gives us movie_player.getStatsForNerds() + the <video> element.
-  * Poll once per second: resolution, fps, dropped frames, bitrate, buffering,
-    startup time, playback quality.
+    which dodges the consent/cookie wall and pre-roll ads of the watch page.
+  * Poll once per second. State/time/quality come from the IFrame API (postMessage)
+    on the parent page; resolution + dropped frames are read from the real <video>
+    element by switching Selenium INTO the cross-origin embed iframe (the parent
+    page cannot reach it, and getStatsForNerds() is not exposed on the API proxy).
+    fps is derived from the decoded-frame-count delta between polls.
   * QUIC disabled so media uses TCP; a background `ss -tin` sampler reads TCP_INFO
     for the googlevideo CDN sockets (needs host networking — see tcpinfo.py).
   * Robust: player errors / unavailable videos / consent pages -> log + skip to
@@ -26,8 +28,10 @@ import time
 
 import yaml
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
 
 from metrics import Metrics
 from tcpinfo import CdnSampler
@@ -41,6 +45,11 @@ VIDEOS_FILE = os.environ.get("VIDEOS_FILE", "/app/videos.yml")
 PAGE_PORT = int(os.environ.get("PAGE_PORT", "8731"))           # local http for player.html
 CHROMEDRIVER = os.environ.get("CHROMEDRIVER", "/usr/bin/chromedriver")
 CHROMIUM_BIN = os.environ.get("CHROMIUM_BIN", "/usr/bin/chromium")
+
+# Ceiling for the derived fps (frames-delta / wall-clock). Real content tops out
+# at 60 (some 4K/gaming at 120); anything above this is a frame-counter reset
+# artifact, not a true rate, so we drop the sample.
+MAX_PLAUSIBLE_FPS = 121.0
 
 # YT.PlayerState
 ENDED, PLAYING, PAUSED, BUFFERING, CUED = 0, 1, 2, 3, 5
@@ -101,7 +110,10 @@ def build_driver():
 
 def parse_bitrates(sample):
     """Best-effort bitrate extraction. getStatsForNerds() field names drift across
-    player builds; try the common ones, fall back to bandwidth_kbps, else None."""
+    player builds; try the common ones, fall back to bandwidth_kbps, else None.
+    NB: the IFrame API does not expose getStatsForNerds(), so `sfn` is currently
+    never populated and this returns (None, None, None) — bitrate stays unmeasured
+    until a same-origin/CDP path to the player stats is added."""
     sfn = sample.get("sfn") or {}
     video = audio = total = None
 
@@ -130,6 +142,39 @@ def parse_bitrates(sample):
     if total is None and video is not None and audio is not None:
         total = video + audio
     return video, audio, total
+
+
+# The YouTube IFrame API replaces <div id="player"> with an <iframe id="player">
+# whose document is cross-origin to our page — unreachable from player.html's JS.
+# Selenium operates per browsing-context, so switching INTO the frame lets us read
+# the real <video> element (size + frame counters) that the parent page cannot.
+_VIDEO_PROBE_JS = """
+var v = document.querySelector('video');
+if (!v) return null;
+var out = { width: v.videoWidth, height: v.videoHeight };
+if (v.getVideoPlaybackQuality) {
+  var q = v.getVideoPlaybackQuality();
+  out.dropped_frames = q.droppedVideoFrames;
+  out.total_frames = q.totalVideoFrames;
+}
+return out;
+"""
+
+
+def read_video_el(driver):
+    """Read the <video> from inside the embed iframe. Returns {} on any miss
+    (iframe not up yet, transient navigation) and always restores the default
+    content context so the next parent-page sample isn't run in the frame."""
+    try:
+        driver.switch_to.frame(driver.find_element(By.ID, "player"))
+        return driver.execute_script(_VIDEO_PROBE_JS) or {}
+    except WebDriverException:
+        return {}
+    finally:
+        try:
+            driver.switch_to.default_content()
+        except WebDriverException:
+            pass
 
 
 def play_one(driver, page_url, video, metrics, sampler):
@@ -163,6 +208,8 @@ def play_one(driver, page_url, video, metrics, sampler):
     t_end = time.time() + play_for
     startup_deadline = time.time() + STARTUP_TIMEOUT
     prev_state = None
+    prev_total_frames = None   # for deriving fps from the frame-count delta
+    prev_frames_at = None
 
     while time.time() < t_end:
         time.sleep(POLL_SECONDS)
@@ -211,21 +258,31 @@ def play_one(driver, page_url, video, metrics, sampler):
                 metrics.video_info.labels(vid, category).set(0)
                 return "timeout"
 
-        height = s.get("video_height")
+        # ---- picture quality (read the real <video> via the iframe) ----
+        ve = read_video_el(driver)
+        # videoHeight is authoritative; fall back to the playback-quality label
+        # (mapped to a height) on the polls where the element isn't readable yet.
+        height = ve.get("height") or QUALITY_ORDINAL.get(quality, 0)
         if height:
             metrics.resolution_height.labels(vid, quality).set(height)
         metrics.playback_quality.labels(vid, quality).set(
-            QUALITY_ORDINAL.get(quality, height or 0))
+            QUALITY_ORDINAL.get(quality, 0))
 
-        # fps + dropped frames from getStatsForNerds / the media element
-        sfn = s.get("sfn") or {}
-        fps = sfn.get("fps") or sfn.get("framerate")
-        if fps:
-            try:
-                metrics.fps.labels(vid, quality).set(float(str(fps).split()[0]))
-            except (ValueError, IndexError):
-                pass
-        dropped = s.get("dropped_frames")
+        # fps: the embed exposes no fps field, so derive it from the change in
+        # total decoded frames over wall-clock time between polls. Drop the sample
+        # whenever the frame counter resets — both DOWN (new media element) and a
+        # jump UP (mid-session quality renegotiation re-baselines totalVideoFrames
+        # higher), which would otherwise divide a huge delta by ~1s into a bogus
+        # spike. A plausibility ceiling rejects anything above real content rates.
+        total_frames = ve.get("total_frames")
+        if total_frames is not None:
+            now = time.time()
+            if prev_total_frames is not None and now > prev_frames_at:
+                fps = (total_frames - prev_total_frames) / (now - prev_frames_at)
+                if 0 <= fps <= MAX_PLAUSIBLE_FPS:
+                    metrics.fps.labels(vid, quality).set(fps)
+            prev_total_frames, prev_frames_at = total_frames, now
+        dropped = ve.get("dropped_frames")
         if dropped is not None:
             metrics.add_dropped(vid, int(dropped))
 

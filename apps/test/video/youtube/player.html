@@ -81,8 +81,12 @@
       });
     }
 
-    // getStatsForNerds() shape varies by player build; pull it defensively and
-    // also read the raw <video> element for fps/quality/buffer ground truth.
+    // Parent-page sample: only the IFrame Player API (postMessage) is reachable
+    // from here. The real <video> element lives in the cross-origin youtube.com
+    // embed iframe, so document.querySelector('video') from this page is always
+    // null and getStatsForNerds() is NOT exposed on the API proxy — size/fps/
+    // dropped-frames are read by the worker, which switches Selenium's execution
+    // context INTO the iframe (WebDriver is not bound by same-origin policy).
     window.__ytqoeSample = function () {
       var p = window.YTQOE.player;
       var out = { state: window.YTQOE.state, error: window.YTQOE.error };
@@ -97,36 +101,17 @@
         if (p && p.getDuration) out.duration = p.getDuration();
         if (p && p.getPlaybackQuality) out.playback_quality = p.getPlaybackQuality();
         if (p && p.getVideoLoadedFraction) out.loaded_fraction = p.getVideoLoadedFraction();
-        if (p && p.getStatsForNerds) {
-          var s = p.getStatsForNerds();
-          out.sfn = s || {};
-        }
       } catch (err) {
         out.sample_error = String(err);
-      }
-      // Underlying media element: authoritative for size, fps, dropped frames.
-      try {
-        var v = document.querySelector('video');
-        if (v) {
-          out.video_width = v.videoWidth;
-          out.video_height = v.videoHeight;
-          out.buffered_end = (v.buffered && v.buffered.length)
-            ? v.buffered.end(v.buffered.length - 1) : null;
-          out.ready_state = v.readyState;   // 4 = HAVE_ENOUGH_DATA
-          if (v.getVideoPlaybackQuality) {
-            var q = v.getVideoPlaybackQuality();
-            out.dropped_frames = q.droppedVideoFrames;
-            out.total_frames = q.totalVideoFrames;
-          }
-        }
-      } catch (err2) {
-        out.video_error = String(err2);
       }
       out.requested_at = window.YTQOE.requestedAt;
       out.started_at = window.YTQOE.startedAt;
       out.first_frame_at = window.YTQOE.firstFrameAt;
       return out;
     };
+    // NB: the <video> element is read by the worker, which switches Selenium into
+    // the embed iframe and evaluates a probe script there (a helper defined on this
+    // parent window would not exist in the iframe's realm).
   </script>
   <script src="https://www.youtube.com/iframe_api"></script>
 </body>
